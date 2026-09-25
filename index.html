@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PyPath — Plataforma de Estudos</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--bg4:#30363d;
+  --border:#30363d;--border2:#21262d;
+  --text:#e6edf3;--muted:#8b949e;--faint:#484f58;
+  --accent:#58a6ff;--green:#3fb950;--yellow:#e3b341;--red:#f85149;--purple:#d2a8ff;
+  --code-bg:#161b22;
+  --sidebar:260px;--header:52px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:15px;line-height:1.65}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── Layout ── */
+.shell{display:grid;grid-template-columns:var(--sidebar) 1fr;grid-template-rows:var(--header) 1fr;height:100vh}
+
+/* ── Header ── */
+.topbar{grid-column:1/-1;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.25rem;gap:1rem;position:sticky;top:0;z-index:200}
+.logo{font-family:'Courier New',monospace;font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-.5px;cursor:pointer;white-space:nowrap}
+.logo em{color:var(--accent);font-style:normal}
+.search-wrap{flex:1;max-width:380px;position:relative}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+#search-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px 5px 30px;color:var(--text);font-size:.8rem;outline:none;transition:border-color .15s}
+#search-input:focus{border-color:var(--accent)}
+#search-input::placeholder{color:var(--faint)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:.75rem}
+.pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.pill strong{color:var(--green)}
+
+/* ── Sidebar ── */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:.5rem 0 2rem}
+.sb-section{padding:.5rem 0}
+.sb-label{font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);padding:.4rem 1rem .2rem;display:block}
+.sb-item{display:flex;align-items:center;gap:.4rem;padding:.35rem .75rem .35rem 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;border-left:2px solid transparent;transition:color .12s,background .12s;user-select:none;line-height:1.3}
+.sb-item:hover{color:var(--text);background:var(--bg3)}
+.sb-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(88,166,255,.06)}
+.sb-item.done .sb-check{color:var(--green);margin-left:auto;font-size:.7rem}
+.sb-item.locked{color:var(--faint);cursor:default;pointer-events:none}
+.sb-item.locked:hover{background:none}
+
+/* ── Main ── */
+.main{overflow-y:auto;scroll-behavior:smooth}
+.page{padding:2rem 2.5rem;max-width:820px;display:none}
+.page.active{display:block}
+
+/* ── Typography ── */
+.page h1{font-size:1.75rem;font-weight:700;line-height:1.2;margin-bottom:.4rem}
+.page h2{font-size:1.15rem;font-weight:600;margin:2.25rem 0 .75rem;color:var(--text);padding-bottom:.4rem;border-bottom:1px solid var(--border)}
+.page h3{font-size:.95rem;font-weight:600;margin:1.5rem 0 .4rem;color:var(--accent)}
+.lead{font-size:1rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+p{margin-bottom:.85rem}
+ul,ol{padding-left:1.5rem;margin-bottom:.85rem}
+li{margin-bottom:.2rem}
+.breadcrumb{font-size:.75rem;color:var(--muted);margin-bottom:1.25rem;display:flex;align-items:center;gap:.4rem}
+.breadcrumb .sep{color:var(--faint)}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0}
+
+/* ── Code ── */
+code{font-family:'Fira Code','Cascadia Code','Courier New',monospace;font-size:.84em;background:var(--bg3);padding:1px 5px;border-radius:3px;color:#e2b75e}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:1.1rem 1.25rem;overflow-x:auto;margin:.85rem 0;position:relative}
+pre code{background:none;padding:0;color:var(--text);font-size:.84rem;line-height:1.75}
+.ck{color:#8b949e}   /* comment */
+.kw{color:#ff7b72}   /* keyword */
+.st{color:#a5d6ff}   /* string */
+.nm{color:#79c0ff}   /* number */
+.fn{color:#d2a8ff}   /* function */
+.op{color:#3fb950}   /* output */
+.copy-btn{position:absolute;top:.5rem;right:.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:.7rem;color:var(--muted);cursor:pointer;transition:color .15s}
+.copy-btn:hover{color:var(--text)}
+
+/* ── Callouts ── */
+.note,.tip,.warn,.danger{border-radius:7px;padding:.85rem 1.1rem;margin:.85rem 0;border-left:3px solid;font-size:.875rem}
+.note{background:rgba(88,166,255,.07);border-color:var(--accent)}
+.tip{background:rgba(63,185,80,.07);border-color:var(--green)}
+.warn{background:rgba(227,179,65,.07);border-color:var(--yellow)}
+.danger{background:rgba(248,81,73,.07);border-color:var(--red)}
+.note b,.tip b,.warn b,.danger b{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.2rem;opacity:.8}
+
+/* ── Method cards ── */
+.method{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:.85rem 1rem;margin:.6rem 0}
+.method .name{font-family:'Courier New',monospace;color:var(--accent);font-weight:600;font-size:.9rem}
+.method .desc{font-size:.84rem;color:var(--muted);margin-top:.2rem}
+
+/* ── Exercises ── */
+.ex-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin:1.25rem 0;overflow:hidden;transition:border-color .2s}
+.ex-card.done-card{border-color:rgba(63,185,80,.35)}
+.ex-head{padding:.9rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.diff{font-size:.8rem;font-family:'Courier New',monospace;padding:1px 8px;border-radius:4px;background:var(--bg3);border:1px solid var(--border)}
+.d1{color:var(--green)}.d2{color:var(--yellow)}.d3{color:#f78166}
+.ex-done-badge{margin-left:auto;color:var(--green);font-size:.78rem}
+.ex-body{padding:1.1rem}
+.ex-body p{font-size:.9rem}
+.expected{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:.6rem .9rem;margin:.6rem 0;font-family:'Courier New',monospace;font-size:.8rem;color:var(--green);white-space:pre}
+.editor{width:100%;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;min-height:110px;padding:.7rem;font-family:'Fira Code','Courier New',monospace;font-size:.82rem;color:var(--text);resize:vertical;outline:none;margin:.65rem 0;transition:border-color .15s;tab-size:4}
+.editor:focus{border-color:var(--accent)}
+.ex-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
+.btn{border:none;border-radius:6px;padding:6px 14px;font-size:.82rem;cursor:pointer;font-weight:500;transition:all .15s;font-family:inherit;display:inline-flex;align-items:center;gap:.35rem;line-height:1}
+.btn-primary{background:var(--accent);color:#000}.btn-primary:hover{background:#79b8ff}
+.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-green{background:var(--green);color:#000}.btn-green:hover{background:#56d364}
+.btn-hint{background:rgba(227,179,65,.12);color:var(--yellow);border:1px solid rgba(227,179,65,.25)}.btn-hint:hover{background:rgba(227,179,65,.22)}
+.btn-done{background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.3)}.btn-done:hover{background:rgba(63,185,80,.22)}
+.btn:disabled{opacity:.45;cursor:default}
+.hint-box{background:rgba(227,179,65,.05);border:1px solid rgba(227,179,65,.18);border-radius:6px;padding:.75rem .9rem;margin-top:.65rem;display:none;font-size:.875rem}
+.hint-box.show{display:block}
+.hint-step-label{font-size:.72rem;color:var(--yellow);font-weight:600;margin-bottom:.15rem}
+.hint-entry+.hint-entry{margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(227,179,65,.12)}
+.sol-box{background:var(--code-bg);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:.85rem;margin-top:.65rem;display:none}
+.sol-box.show{display:block}
+.sol-label{font-size:.7rem;color:var(--green);font-weight:700;margin-bottom:.5rem;letter-spacing:.03em}
+.sol-explanation{margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border);font-size:.85rem;color:var(--muted)}
+
+/* ── Progress bar ── */
+.pbar{background:var(--bg3);border-radius:999px;height:7px;overflow:hidden;margin:.4rem 0}
+.pbar-fill{height:100%;background:var(--green);border-radius:999px;transition:width .6s ease}
+
+/* ── Dashboard ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:.85rem;margin:1.25rem 0}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.1rem}
+.stat .val{font-size:2rem;font-weight:700;color:var(--accent);line-height:1}
+.stat .lbl{font-size:.75rem;color:var(--muted);margin-top:.25rem}
+.current-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem;margin:1.25rem 0}
+.quick-nav{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.65rem;margin-top:.85rem}
+.qbtn{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:.75rem 1rem;font-size:.82rem;color:var(--muted);cursor:pointer;text-align:left;transition:border-color .15s,color .15s;font-family:inherit;display:flex;align-items:center;gap:.5rem}
+.qbtn:hover{border-color:var(--accent);color:var(--text)}
+
+/* ── Roadmap ── */
+.rm-node{display:flex;gap:1rem;margin-bottom:1.5rem;position:relative}
+.rm-node:not(:last-child)::before{content:'';position:absolute;left:19px;top:42px;width:2px;height:calc(100% + 1.5rem - 42px);background:var(--border)}
+.rm-dot{width:40px;height:40px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;transition:border-color .2s}
+.rm-dot.done{border-color:var(--green);background:rgba(63,185,80,.1)}
+.rm-dot.active{border-color:var(--accent);background:rgba(88,166,255,.1)}
+.rm-body{flex:1;padding-top:.45rem}
+.rm-title{font-weight:600;margin-bottom:.2rem;display:flex;align-items:center;gap:.5rem}
+.rm-desc{font-size:.85rem;color:var(--muted)}
+.rm-meta{font-size:.78rem;color:var(--faint);margin-top:.4rem}
+.here-tag{background:rgba(88,166,255,.12);color:var(--accent);border:1px solid rgba(88,166,255,.25);border-radius:4px;padding:1px 7px;font-size:.7rem;font-weight:600}
+
+/* ── Glossary ── */
+.gloss-item{border-bottom:1px solid var(--border);padding:.8rem 0}
+.gloss-item:last-child{border-bottom:none}
+.gloss-term{font-family:'Courier New',monospace;color:var(--accent);font-weight:600;margin-bottom:.2rem}
+.gloss-def{font-size:.875rem;color:var(--muted)}
+
+/* ── Module complete banner ── */
+.mod-done{background:rgba(63,185,80,.07);border:1px solid rgba(63,185,80,.3);border-radius:10px;padding:1.5rem;text-align:center;margin-top:2rem}
+.mod-done h3{color:var(--green);border:none;margin:0 0 .5rem}
+
+/* ── Search results ── */
+.sr{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.8rem 1rem;margin-bottom:.6rem;cursor:pointer;transition:border-color .15s}
+.sr:hover{border-color:var(--accent)}
+.sr-path{font-size:.72rem;color:var(--muted);margin-bottom:.2rem;display:flex;align-items:center;gap:.4rem}
+.sr-title{font-weight:600}
+.tag{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-size:.68rem;color:var(--muted);font-family:'Courier New',monospace}
+
+/* ── Section nav ── */
+.sec-nav{display:flex;justify-content:space-between;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border);gap:1rem}
+.snav{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:8px;padding:.8rem 1rem;cursor:pointer;transition:border-color .15s;flex:1;max-width:260px;background:none;font-family:inherit;text-align:left;color:var(--text)}
+.snav:hover{border-color:var(--accent)}
+.snav .dir{font-size:.72rem;color:var(--muted);margin-bottom:.2rem}
+.snav .nm2{font-weight:600;font-size:.875rem;color:var(--accent)}
+.snav.right{text-align:right}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ══════════ TOPBAR ══════════ -->
+<header class="topbar">
+  <div class="logo" onclick="nav('dashboard')">Py<em>Path</em></div>
+  <div class="search-wrap">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input id="search-input" type="text" placeholder="Buscar conceitos, exercícios..." autocomplete="off" oninput="doSearch(this.value)">
+  </div>
+  <div class="topbar-right">
+    <div class="pill">Progresso: <strong id="hdr-pct">0%</strong></div>
+  </div>
+</header>
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<aside class="sidebar" id="sidebar"></aside>
+
+<!-- ══════════ MAIN ══════════ -->
+<main class="main" id="main">
+
+<!-- DASHBOARD -->
+<div class="page" id="pg-dashboard"></div>
+
+<!-- ROADMAP -->
+<div class="page" id="pg-roadmap">
+  <h1>Roadmap</h1>
+  <p class="lead">Visão completa da sua jornada — do nível atual até intermediário sólido.</p>
+  <div id="roadmap-nodes" style="margin-top:1.75rem"></div>
+</div>
+
+<!-- GLOSSÁRIO -->
+<div class="page" id="pg-glossario">
+  <h1>Glossário</h1>
+  <p class="lead">Termos essenciais com explicações diretas.</p>
+  <input type="text" placeholder="Filtrar termos..." style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--text);font-size:.82rem;outline:none;margin-bottom:1rem" oninput="filterGloss(this.value)">
+  <dl id="gloss-list"></dl>
+</div>
+
+<!-- SEARCH -->
+<div class="page" id="pg-search">
+  <h1 id="search-title">Busca</h1>
+  <div id="search-results"></div>
+</div>
+
+<!-- LESSON VIEW (dynamic) -->
+<div class="page" id="pg-lesson"></div>
+
+</main>
+</div>
+<script>
+// ═══════════════════════════════════════════════════
+// CURRICULUM STRUCTURE
+// ═══════════════════════════════════════════════════
+const PHASES = [
+  { id:'nav', title:null, items:[
+    { id:'dashboard', label:'⊞  Dashboard' },
+    { id:'roadmap',   label:'📍  Roadmap' },
+    { id:'glossario', label:'📖  Glossário' },
+  ]},
+  { id:'estruturas', title:'Estruturas de Dados', items:[
+    { id:'revisao',     label:'Revisão Rápida',  prereqs:[] },
+    { id:'listas',      label:'Listas',          prereqs:['revisao'] },
+    { id:'strings',     label:'Strings',         prereqs:['listas'] },
+    { id:'tuplas',      label:'Tuplas',           prereqs:['strings'] },
+    { id:'sets',        label:'Sets',             prereqs:['tuplas'] },
+    { id:'dicionarios', label:'Dicionários',      prereqs:['sets'] },
+  ]},
+  { id:'funcoes', title:'Funções', items:[
+    { id:'fn-return',  label:'Return & Escopo',     prereqs:['listas'] },
+    { id:'fn-compose', label:'Composição',           prereqs:['fn-return'] },
+    { id:'fn-lists',   label:'Funções com Coleções', prereqs:['fn-compose','dicionarios'] },
+  ]},
+  { id:'inter', title:'Python Intermediário', items:[
+    { id:'modulos',   label:'Módulos & Import', prereqs:['fn-lists'] },
+    { id:'excecoes',  label:'Exceções',          prereqs:['modulos'] },
+    { id:'arquivos',  label:'Arquivos',           prereqs:['excecoes'] },
+    { id:'json-mod',  label:'JSON',               prereqs:['arquivos'] },
+    { id:'list-comp', label:'Compreensão de Listas', prereqs:['dicionarios','fn-return'] },
+  ]},
+  { id:'poo', title:'POO', items:[
+    { id:'classes',   label:'Classes & Objetos',  prereqs:['modulos'] },
+    { id:'heranca',   label:'Herança',             prereqs:['classes'] },
+    { id:'composicao-poo', label:'Composição',    prereqs:['heranca'] },
+  ]},
+  { id:'sql', title:'SQL', items:[
+    { id:'sql-ddl',    label:'CREATE & Tipos',     prereqs:['classes'] },
+    { id:'sql-joins',  label:'JOINs',              prereqs:['sql-ddl'] },
+    { id:'sql-sub',    label:'Subconsultas',        prereqs:['sql-joins'] },
+    { id:'sqlite-py',  label:'SQLite + Python',     prereqs:['sql-sub','excecoes'] },
+  ]},
+  { id:'git', title:'Git & GitHub', items:[
+    { id:'git-model',    label:'Modelo Mental',    prereqs:['modulos'] },
+    { id:'git-branches', label:'Branches & Merge', prereqs:['git-model'] },
+    { id:'git-remote',   label:'GitHub & Remote',  prereqs:['git-branches'] },
+  ]},
+  { id:'apis', title:'HTTP & APIs', items:[
+    { id:'http',     label:'HTTP Fundamentos', prereqs:['json-mod'] },
+    { id:'rest',     label:'REST & Recursos',  prereqs:['http'] },
+    { id:'requests', label:'Consumindo APIs',  prereqs:['rest','sqlite-py'] },
+  ]},
+  { id:'testes', title:'Testes', items:[
+    { id:'pytest', label:'pytest',     prereqs:['fn-lists'] },
+    { id:'tdd',    label:'TDD básico', prereqs:['pytest'] },
+  ]},
+  { id:'projetos', title:'Projetos', items:[
+    { id:'proj-cli',   label:'CLI — Lista de Tarefas',  prereqs:['fn-lists'] },
+    { id:'proj-json',  label:'Gerenciador JSON',         prereqs:['json-mod'] },
+    { id:'proj-db',    label:'Sistema com SQLite',       prereqs:['sqlite-py'] },
+    { id:'proj-api',   label:'Cliente de API',           prereqs:['requests'] },
+    { id:'proj-final', label:'Projeto Final',            prereqs:['pytest','sqlite-py','requests'] },
+  ]},
+];
+
+// Flat map of all lesson ids
+const ALL_LESSONS = PHASES.flatMap(p => p.items).reduce((acc, item) => {
+  acc[item.id] = item; return acc;
+}, {});
+
+// ═══════════════════════════════════════════════════
+// PROGRESS (localStorage)
+// ═══════════════════════════════════════════════════
+const P = {
+  KEY: 'pypath_v2',
+  data: null,
+  load() {
+    if (!this.data) {
+      try { this.data = JSON.parse(localStorage.getItem(this.KEY)) || {}; }
+      catch { this.data = {}; }
+    }
+    return this.data;
+  },
+  save() { localStorage.setItem(this.KEY, JSON.stringify(this.data)); },
+  moduleStatus(id) {
+    const d = this.load();
+    if (d['m_' + id]) return 'done';
+    const lesson = ALL_LESSONS[id];
+    if (!lesson || !lesson.prereqs) return 'available';
+    const ok = (lesson.prereqs || []).every(r => d['m_' + r]);
+    return ok ? 'available' : 'locked';
+  },
+  completeModule(id) {
+    this.load()['m_' + id] = true;
+    this.save();
+    renderSidebar();
+    updateHeaderPct();
+  },
+  isDone(id) { return !!this.load()['m_' + id]; },
+  exDone(id) { return !!this.load()['ex_' + id]; },
+  markEx(id) { this.load()['ex_' + id] = true; this.save(); },
+  completedModules() { return Object.keys(this.load()).filter(k => k.startsWith('m_')).length; },
+  completedExs() { return Object.keys(this.load()).filter(k => k.startsWith('ex_')).length; },
+  totalModules() { return PHASES.slice(1).flatMap(p => p.items).length; },
+  totalExs() { return Object.values(EXERCISES).flat().length; },
+  pct() { return Math.round(this.completedModules() / this.totalModules() * 100); },
+  firstAvailable() {
+    for (const phase of PHASES.slice(1)) {
+      for (const item of phase.items) {
+        if (this.moduleStatus(item.id) === 'available') return item;
+      }
+    }
+    return null;
+  },
+};
+
+// ═══════════════════════════════════════════════════
+// EXERCISES
+// ═══════════════════════════════════════════════════
+const EXERCISES = {
+'listas': [
+  { id:'lst-01', title:'Lista de compras', diff:1,
+    desc:'Crie uma lista com 3 itens. Adicione mais 2 com <code>append()</code>. Exiba a lista e seu tamanho.',
+    expected:'[\'leite\', \'ovos\', \'pão\', \'café\', \'queijo\']\nTamanho: 5',
+    hints:['Crie a lista: <code>compras = ["leite", "ovos", "pão"]</code>','Use <code>compras.append("café")</code> e depois <code>append("queijo")</code>','Exiba com <code>print(compras)</code> e <code>print("Tamanho:", len(compras))</code>'],
+    sol:`compras = ["leite", "ovos", "pão"]\ncompras.append("café")\ncompras.append("queijo")\nprint(compras)\nprint("Tamanho:", len(compras))`,
+    exp:'<code>append()</code> sempre adiciona ao final. <code>len()</code> conta os elementos.'
+  },
+  { id:'lst-02', title:'Calculando a média', diff:2,
+    desc:'Dada <code>notas = [7.5, 8.0, 9.0, 6.5, 7.0]</code>, calcule a média usando <code>sum()</code> e <code>len()</code>. Exiba com 1 casa decimal.',
+    expected:'Média: 7.6',
+    hints:['Média = soma ÷ quantidade de elementos','<code>sum(notas)</code> soma todos os valores','Use <code>f"{media:.1f}"</code> para formatar com 1 casa decimal'],
+    sol:`notas = [7.5, 8.0, 9.0, 6.5, 7.0]\nmedia = sum(notas) / len(notas)\nprint(f"Média: {media:.1f}")`,
+    exp:'<code>sum()</code> é built-in do Python. Dividimos pelo <code>len()</code> para obter a média. <code>:.1f</code> formata com uma casa decimal.'
+  },
+  { id:'lst-03', title:'Removendo e atualizando', diff:2,
+    desc:'Crie <code>numeros = [10, 20, 30, 40, 50]</code>. Remova o último com <code>pop()</code> guardando o valor. Depois altere o elemento de índice 1 para 99. Exiba o resultado.',
+    expected:'Removido: 50\n[10, 99, 30, 40]',
+    hints:['<code>removido = numeros.pop()</code> remove e retorna o último','Para alterar: <code>numeros[1] = 99</code>','Exiba com <code>print("Removido:", removido)</code> e <code>print(numeros)</code>'],
+    sol:`numeros = [10, 20, 30, 40, 50]\nremovido = numeros.pop()\nnumeros[1] = 99\nprint("Removido:", removido)\nprint(numeros)`,
+    exp:'<code>pop()</code> retorna o valor removido — por isso podemos guardá-lo. Alterar por índice funciona como atribuição normal de variável.'
+  },
+  { id:'lst-04', title:'Filtrando aprovados', diff:3,
+    desc:'Dada <code>notas = [4.5, 7.0, 3.5, 8.5, 5.0, 9.0, 6.0]</code>, crie uma lista <code>aprovados</code> com as notas ≥ 6. Exiba a lista e a quantidade.',
+    expected:'Aprovados: [7.0, 8.5, 9.0, 6.0]\nQuantidade: 4',
+    hints:['Comece com <code>aprovados = []</code>','Use <code>for nota in notas:</code> com um <code>if nota >= 6.0:</code>','Dentro do if: <code>aprovados.append(nota)</code>'],
+    sol:`notas = [4.5, 7.0, 3.5, 8.5, 5.0, 9.0, 6.0]\naprovados = []\nfor nota in notas:\n    if nota >= 6.0:\n        aprovados.append(nota)\nprint("Aprovados:", aprovados)\nprint("Quantidade:", len(aprovados))`,
+    exp:'Lista vazia + for + if + append é um padrão clássico de filtragem. Verá isso centenas de vezes.'
+  },
+],
+'strings': [
+  { id:'str-01', title:'Analisando texto', diff:1,
+    desc:'Dada <code>texto = "  Python é fantástico!  "</code>, remova os espaços das bordas, converta para maiúsculas e conte as letras "A".',
+    expected:'PYTHON É FANTÁSTICO!\nLetras A: 2',
+    hints:['<code>.strip()</code> remove espaços das bordas','<code>.upper()</code> converte para maiúsculas — aplique no resultado do strip','<code>.count("A")</code> conta ocorrências (maiúscula, então aplique após upper)'],
+    sol:`texto = "  Python é fantástico!  "\nprocessado = texto.strip().upper()\nprint(processado)\nprint("Letras A:", processado.count("A"))`,
+    exp:'Métodos de string podem ser encadeados: <code>texto.strip().upper()</code>. O ponto final usa o retorno do anterior como entrada.'
+  },
+  { id:'str-02', title:'Invertendo palavras', diff:2,
+    desc:'Dado <code>frase = "Python é incrível"</code>, separe em palavras, inverta a ordem e una novamente.',
+    expected:'incrível é Python',
+    hints:['<code>frase.split()</code> separa por espaços → lista de palavras','<code>palavras.reverse()</code> inverte a lista no lugar','<code>" ".join(palavras)</code> une a lista de volta em string'],
+    sol:`frase = "Python é incrível"\npalavras = frase.split()\npalavras.reverse()\nprint(" ".join(palavras))`,
+    exp:'O padrão split → transformar → join é muito usado. <code>split()</code> cria a lista, você manipula, <code>join()</code> reconstrói a string.'
+  },
+],
+'tuplas': [
+  { id:'tup-01', title:'Coordenadas e desempacotamento', diff:1,
+    desc:'Crie uma tupla <code>ponto = (5, 10)</code>. Desempacote em <code>x</code> e <code>y</code> e exiba cada um. Depois tente modificar — o que acontece?',
+    expected:'x = 5\ny = 10',
+    hints:['<code>ponto = (5, 10)</code> cria a tupla','<code>x, y = ponto</code> desempacota em duas variáveis','Para "modificar": <code>ponto[0] = 99</code> → TypeError'],
+    sol:`ponto = (5, 10)\nx, y = ponto\nprint("x =", x)\nprint("y =", y)\n# ponto[0] = 99  # TypeError!`,
+    exp:'O desempacotamento torna o acesso mais legível. Tuplas são imutáveis por design — use quando os dados não devem mudar.'
+  },
+],
+'sets': [
+  { id:'set-01', title:'Visitantes únicos', diff:1,
+    desc:'Dada <code>visitantes = ["Ana","Bruno","Ana","Carlos","Bruno","Ana"]</code>, descubra quantos visitantes únicos há usando um set.',
+    expected:'Visitantes únicos: 3',
+    hints:['<code>set(lista)</code> converte lista para set, eliminando duplicatas','<code>len(set(visitantes))</code> conta os únicos'],
+    sol:`visitantes = ["Ana","Bruno","Ana","Carlos","Bruno","Ana"]\nunicos = set(visitantes)\nprint("Visitantes únicos:", len(unicos))`,
+    exp:'Converter para set é a forma mais idiomática de remover duplicatas. O set garante cada elemento uma única vez.'
+  },
+  { id:'set-02', title:'Operações de conjunto', diff:2,
+    desc:'Crie <code>A = {1,2,3,4,5}</code> e <code>B = {4,5,6,7,8}</code>. Exiba: a união, a interseção e os elementos que estão em A mas não em B.',
+    expected:'União: {1, 2, 3, 4, 5, 6, 7, 8}\nInterseção: {4, 5}\nSó em A: {1, 2, 3}',
+    hints:['União: <code>A | B</code>','Interseção: <code>A & B</code>','Diferença (A - B): <code>A - B</code>'],
+    sol:`A = {1,2,3,4,5}\nB = {4,5,6,7,8}\nprint("União:", A | B)\nprint("Interseção:", A & B)\nprint("Só em A:", A - B)`,
+    exp:'Sets suportam as mesmas operações da teoria dos conjuntos: | (união), & (interseção), - (diferença), ^ (diferença simétrica).'
+  },
+],
+'dicionarios': [
+  { id:'dic-01', title:'Perfil de usuário', diff:1,
+    desc:'Crie um dicionário <code>usuario</code> com nome, email e nível ("iniciante"). Atualize o nível para "intermediário", adicione "ativo": True. Exiba cada par chave-valor.',
+    expected:'nome: Mig\nemail: mig@email.com\nnivel: intermediário\nativo: True',
+    hints:['<code>usuario = {"nome":"Mig","email":"mig@email.com","nivel":"iniciante"}</code>','<code>usuario["nivel"] = "intermediário"</code> atualiza','<code>for chave, valor in usuario.items():</code> itera sobre os pares'],
+    sol:`usuario = {\n    "nome": "Mig",\n    "email": "mig@email.com",\n    "nivel": "iniciante"\n}\nusuario["nivel"] = "intermediário"\nusuario["ativo"] = True\nfor chave, valor in usuario.items():\n    print(f"{chave}: {valor}")`,
+    exp:'Atualizar e adicionar chaves usam a mesma sintaxe. <code>.items()</code> é o método mais usado para iterar sobre dicionários.'
+  },
+  { id:'dic-02', title:'Contando palavras', diff:3,
+    desc:'Dado <code>texto = "o gato e o rato e o pato"</code>, conte quantas vezes cada palavra aparece usando um dicionário.',
+    expected:'o: 3\ngato: 1\ne: 2\nrato: 1\npato: 1',
+    hints:['Separe: <code>palavras = texto.split()</code>','Crie um dicionário vazio e percorra a lista','Use <code>contagem.get(palavra, 0) + 1</code> — retorna 0 se a chave não existir, depois soma 1'],
+    sol:`texto = "o gato e o rato e o pato"\npalavras = texto.split()\ncontagem = {}\nfor palavra in palavras:\n    contagem[palavra] = contagem.get(palavra, 0) + 1\nfor p, n in contagem.items():\n    print(f"{p}: {n}")`,
+    exp:'O padrão <code>.get(chave, 0) + 1</code> é clássico para contagem. <code>get()</code> retorna 0 quando a chave não existe — primeira ocorrência vira 1, segunda vira 2, etc.'
+  },
+],
+'fn-return': [
+  { id:'ret-01', title:'Calculadora com return', diff:1,
+    desc:'Crie funções <code>somar(a, b)</code>, <code>subtrair(a, b)</code>, <code>multiplicar(a, b)</code> e <code>dividir(a, b)</code>. Todas usam <code>return</code>. Para dividir, retorne <code>None</code> se b == 0. Teste cada uma.',
+    expected:'Soma: 15\nSubtração: 5\nMultiplicação: 50\nDivisão: 2.0\nDivisão por zero: None',
+    hints:['Cada função: <code>def somar(a, b): return a + b</code>','Para dividir: <code>if b == 0: return None</code> antes do cálculo','Teste: <code>print("Soma:", somar(10, 5))</code>'],
+    sol:`def somar(a, b):\n    return a + b\n\ndef subtrair(a, b):\n    return a - b\n\ndef multiplicar(a, b):\n    return a * b\n\ndef dividir(a, b):\n    if b == 0:\n        return None\n    return a / b\n\nprint("Soma:", somar(10, 5))\nprint("Subtração:", subtrair(10, 5))\nprint("Multiplicação:", multiplicar(10, 5))\nprint("Divisão:", dividir(10, 5))\nprint("Divisão por zero:", dividir(10, 0))`,
+    exp:'Com <code>return</code> você pode usar o resultado em outras expressões: <code>total = somar(a,b) * 2</code>. Com <code>print()</code> isso seria impossível.'
+  },
+  { id:'ret-02', title:'Classificando nota', diff:2,
+    desc:'Crie <code>classificar(nota)</code> que retorne: "Reprovado" (< 5), "Recuperação" (5–6.9), "Aprovado" (7–8.9), "Excelente" (≥ 9). Teste com [4.0, 5.5, 7.5, 9.0].',
+    expected:'4.0 → Reprovado\n5.5 → Recuperação\n7.5 → Aprovado\n9.0 → Excelente',
+    hints:['Use if/elif/else dentro da função','Cada ramo faz <code>return "string"</code>','Teste iterando: <code>for nota in [4.0, 5.5, 7.5, 9.0]:</code>'],
+    sol:`def classificar(nota):\n    if nota < 5:\n        return "Reprovado"\n    elif nota < 7:\n        return "Recuperação"\n    elif nota < 9:\n        return "Aprovado"\n    else:\n        return "Excelente"\n\nfor nota in [4.0, 5.5, 7.5, 9.0]:\n    print(f"{nota} → {classificar(nota)}")`,
+    exp:'Quando <code>return</code> está dentro de um <code>if</code>, a função para imediatamente. Percorrer uma lista de casos de teste é um hábito excelente.'
+  },
+],
+};
+
+// ═══════════════════════════════════════════════════
+// LESSON CONTENT
+// ═══════════════════════════════════════════════════
+const LESSONS = {
+
+revisao: `<div class="breadcrumb">Estruturas de Dados <span class="sep">›</span> Revisão Rápida</div>
+<h1>Revisão Rápida</h1>
+<p class="lead">Uma referência dos fundamentos que você já domina. Leitura rápida — depois vá direto para Listas.</p>
+<div class="tip"><b>✓ Referência, não aula</b>Esta seção existe para consulta. O conteúdo novo começa em Listas.</div>
+<h2>Variáveis e Tipos</h2>
+<pre><code>nome = <span class="st">"Python"</span>      <span class="ck"># str</span>
+versao = 3.11       <span class="ck"># float</span>
+ano = 2024          <span class="ck"># int</span>
+ativo = <span class="kw">True</span>        <span class="ck"># bool</span>
+
+<span class="ck"># Conversões</span>
+<span class="fn">int</span>(<span class="st">"42"</span>)        <span class="ck"># 42</span>
+<span class="fn">float</span>(<span class="st">"3.14"</span>)    <span class="ck"># 3.14</span>
+<span class="fn">str</span>(<span class="nm">100</span>)         <span class="ck"># "100"</span></code></pre>
+<h2>Condicionais</h2>
+<pre><code>nota = 7.5
+<span class="kw">if</span> nota >= <span class="nm">7</span>:
+    <span class="fn">print</span>(<span class="st">"Aprovado"</span>)
+<span class="kw">elif</span> nota >= <span class="nm">5</span>:
+    <span class="fn">print</span>(<span class="st">"Recuperação"</span>)
+<span class="kw">else</span>:
+    <span class="fn">print</span>(<span class="st">"Reprovado"</span>)</code></pre>
+<h2>Loops</h2>
+<pre><code><span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">5</span>):        <span class="ck"># 0, 1, 2, 3, 4</span>
+    <span class="fn">print</span>(i)
+
+x = <span class="nm">0</span>
+<span class="kw">while</span> x < <span class="nm">3</span>:
+    x += <span class="nm">1</span>
+
+<span class="ck"># break e continue</span>
+<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">10</span>):
+    <span class="kw">if</span> i == <span class="nm">5</span>: <span class="kw">break</span>
+    <span class="kw">if</span> i % <span class="nm">2</span> == <span class="nm">0</span>: <span class="kw">continue</span>
+    <span class="fn">print</span>(i)    <span class="ck"># 1, 3</span></code></pre>
+<h2>Funções (o que você já sabe)</h2>
+<pre><code><span class="kw">def</span> <span class="fn">sauda</span>(nome, cumprimento=<span class="st">"Olá"</span>):
+    <span class="fn">print</span>(f<span class="st">"{cumprimento}, {nome}!"</span>)
+
+<span class="fn">sauda</span>(<span class="st">"Mig"</span>)         <span class="ck"># Olá, Mig!</span>
+<span class="fn">sauda</span>(<span class="st">"Mig"</span>, <span class="st">"Oi"</span>)  <span class="ck"># Oi, Mig!</span></code></pre>
+<div class="mod-done">
+  <h3>Revisão concluída</h3>
+  <p style="color:var(--muted);margin-bottom:.85rem">Próximo passo: explorar Listas em profundidade.</p>
+  <button class="btn btn-green" onclick="completeAndGo('revisao','listas')">✓ Concluído — Ir para Listas →</button>
+</div>`,
+
+listas: `<div class="breadcrumb">Estruturas de Dados <span class="sep">›</span> Listas</div>
+<h1>Listas</h1>
+<p class="lead">A estrutura de dados mais usada em Python. Guarda múltiplos valores em sequência ordenada.</p>
+<h2>O que é uma lista?</h2>
+<p>Sem listas, guardar 5 notas exige 5 variáveis. Com listas:</p>
+<pre><code>notas = [<span class="nm">7.5</span>, <span class="nm">8.0</span>, <span class="nm">6.5</span>, <span class="nm">9.0</span>, <span class="nm">5.5</span>]
+<span class="ck"># Uma variável, cinco valores, numerados automaticamente</span></code></pre>
+<div class="note"><b>💡 O que é</b>Uma lista é uma sequência <em>ordenada</em> e <em>mutável</em>. Pode conter qualquer tipo de dado — números, strings, booleanos, até outras listas.</div>
+<h3>Criando listas</h3>
+<pre><code>vazia = []
+notas = [<span class="nm">7.5</span>, <span class="nm">8.0</span>, <span class="nm">9.0</span>]
+frutas = [<span class="st">"maçã"</span>, <span class="st">"banana"</span>, <span class="st">"laranja"</span>]
+misto = [<span class="nm">42</span>, <span class="st">"Python"</span>, <span class="kw">True</span>]        <span class="ck"># funciona, mas misture com critério</span>
+letras = <span class="fn">list</span>(<span class="st">"abc"</span>)               <span class="ck"># ["a", "b", "c"]</span></code></pre>
+<h2>Índices — acessando elementos</h2>
+<p>Cada elemento tem uma posição numérica (<em>índice</em>), começando em <code>0</code>.</p>
+<pre><code>frutas = [<span class="st">"maçã"</span>, <span class="st">"banana"</span>, <span class="st">"laranja"</span>, <span class="st">"uva"</span>]
+<span class="ck">#           0        1          2          3</span>
+
+<span class="fn">print</span>(frutas[<span class="nm">0</span>])   <span class="op"># maçã</span>
+<span class="fn">print</span>(frutas[<span class="nm">3</span>])   <span class="op"># uva</span>
+<span class="fn">print</span>(frutas[-<span class="nm">1</span>])  <span class="op"># uva   (último)</span>
+<span class="fn">print</span>(frutas[-<span class="nm">2</span>])  <span class="op"># laranja (penúltimo)</span></code></pre>
+<h3>Alterando elementos</h3>
+<pre><code>notas = [<span class="nm">7.0</span>, <span class="nm">8.0</span>, <span class="nm">5.5</span>]
+notas[<span class="nm">2</span>] = <span class="nm">6.5</span>
+<span class="fn">print</span>(notas)  <span class="op"># [7.0, 8.0, 6.5]</span></code></pre>
+<h2>Métodos essenciais</h2>
+<div class="method"><div class="name">.append(valor)</div><div class="desc">Adiciona um valor ao <strong>final</strong> da lista.</div></div>
+<pre><code>compras = [<span class="st">"leite"</span>, <span class="st">"ovos"</span>]
+compras.append(<span class="st">"pão"</span>)
+<span class="fn">print</span>(compras)  <span class="op"># ["leite", "ovos", "pão"]</span></code></pre>
+<div class="method"><div class="name">.remove(valor)</div><div class="desc">Remove a <strong>primeira ocorrência</strong> do valor. Gera erro se não existir.</div></div>
+<pre><code>frutas = [<span class="st">"maçã"</span>, <span class="st">"banana"</span>, <span class="st">"maçã"</span>]
+frutas.remove(<span class="st">"maçã"</span>)
+<span class="fn">print</span>(frutas)  <span class="op"># ["banana", "maçã"]</span></code></pre>
+<div class="method"><div class="name">.pop(índice)</div><div class="desc">Remove e <strong>retorna</strong> o elemento. Sem argumento, remove o último.</div></div>
+<pre><code>frutas = [<span class="st">"maçã"</span>, <span class="st">"banana"</span>, <span class="st">"laranja"</span>]
+removida = frutas.pop()
+<span class="fn">print</span>(removida)   <span class="op"># laranja</span>
+<span class="fn">print</span>(frutas)     <span class="op"># ["maçã", "banana"]</span></code></pre>
+<div class="method"><div class="name">len(lista)</div><div class="desc">Retorna o número de elementos. <em>(Função embutida, não método.)</em></div></div>
+<pre><code>notas = [<span class="nm">8.0</span>, <span class="nm">7.5</span>, <span class="nm">9.0</span>]
+<span class="fn">print</span>(<span class="fn">len</span>(notas))   <span class="op"># 3</span></code></pre>
+<h2>Iterando sobre listas</h2>
+<pre><code>frutas = [<span class="st">"maçã"</span>, <span class="st">"banana"</span>, <span class="st">"laranja"</span>]
+
+<span class="kw">for</span> fruta <span class="kw">in</span> frutas:
+    <span class="fn">print</span>(fruta)   <span class="op"># maçã, banana, laranja</span>
+
+<span class="ck"># Quando precisar do índice também:</span>
+<span class="kw">for</span> i, fruta <span class="kw">in</span> <span class="fn">enumerate</span>(frutas):
+    <span class="fn">print</span>(f<span class="st">"{i}: {fruta}"</span>)
+<span class="op"># 0: maçã
+# 1: banana
+# 2: laranja</span></code></pre>
+<div class="tip"><b>✓ enumerate()</b>Prefira <code>for i, item in enumerate(lista)</code> a <code>for i in range(len(lista))</code>. É mais legível e pythonico.</div>
+<h2>Listas dentro de listas</h2>
+<pre><code>alunos = [
+    [<span class="st">"Ana"</span>, <span class="nm">8.5</span>, <span class="st">"aprovada"</span>],
+    [<span class="st">"Bruno"</span>, <span class="nm">5.0</span>, <span class="st">"recuperação"</span>],
+]
+
+<span class="fn">print</span>(alunos[<span class="nm">0</span>][<span class="nm">0</span>])  <span class="op"># Ana</span>
+<span class="fn">print</span>(alunos[<span class="nm">1</span>][<span class="nm">1</span>])  <span class="op"># 5.0</span>
+
+<span class="kw">for</span> aluno <span class="kw">in</span> alunos:
+    <span class="fn">print</span>(f<span class="st">"{aluno[0]}: {aluno[1]} ({aluno[2]})"</span>)</code></pre>
+<h2>Mais métodos úteis</h2>
+<pre><code>nums = [<span class="nm">3</span>, <span class="nm">1</span>, <span class="nm">4</span>, <span class="nm">1</span>, <span class="nm">5</span>]
+nums.sort()             <span class="ck"># ordena no lugar → [1, 1, 3, 4, 5]</span>
+nums.reverse()          <span class="ck"># inverte → [5, 4, 3, 1, 1]</span>
+<span class="fn">print</span>(nums.count(<span class="nm">1</span>))  <span class="op"># 2</span>
+copia = nums.copy()     <span class="ck"># cópia independente</span></code></pre>
+<div class="warn"><b>⚠️ Cuidado com cópias</b><code>b = a</code> NÃO cria cópia — cria outra referência ao mesmo objeto. Modifique <code>b</code> e <code>a</code> também muda. Use <code>b = a.copy()</code> ou <code>b = a[:]</code>.</div>
+<h2>Pertencimento com in</h2>
+<pre><code>frutas = [<span class="st">"maçã"</span>, <span class="st">"banana"</span>]
+<span class="kw">if</span> <span class="st">"banana"</span> <span class="kw">in</span> frutas:
+    <span class="fn">print</span>(<span class="st">"Tem banana!"</span>)
+<span class="kw">if</span> <span class="st">"uva"</span> <span class="kw">not in</span> frutas:
+    <span class="fn">print</span>(<span class="st">"Sem uva."</span>)</code></pre>
+<hr>
+${mkExercises('listas')}
+${mkCompleteBtn('listas', 'strings', 'Strings')}`,
+
+strings: `<div class="breadcrumb">Estruturas de Dados <span class="sep">›</span> Strings</div>
+<h1>Strings</h1>
+<p class="lead">Strings são sequências de caracteres. Você já as usa — agora vamos explorar seus métodos e o poder do slicing.</p>
+<h2>Strings são sequências</h2>
+<pre><code>nome = <span class="st">"Python"</span>
+<span class="fn">print</span>(nome[<span class="nm">0</span>])    <span class="op"># P</span>
+<span class="fn">print</span>(nome[-<span class="nm">1</span>])   <span class="op"># n</span>
+<span class="fn">print</span>(<span class="fn">len</span>(nome))  <span class="op"># 6</span>
+
+<span class="kw">for</span> letra <span class="kw">in</span> nome:
+    <span class="fn">print</span>(letra)    <span class="ck"># P y t h o n</span></code></pre>
+<h2>Slicing — fatias</h2>
+<p>Slicing permite pegar um trecho de uma sequência com a sintaxe <code>[início:fim:passo]</code> — o índice <code>fim</code> é <em>exclusivo</em>.</p>
+<pre><code>texto = <span class="st">"Python é incrível"</span>
+
+<span class="fn">print</span>(texto[<span class="nm">0</span>:<span class="nm">6</span>])    <span class="op"># Python</span>
+<span class="fn">print</span>(texto[:<span class="nm">6</span>])     <span class="op"># Python   (do início até 6)</span>
+<span class="fn">print</span>(texto[<span class="nm">7</span>:])     <span class="op"># é incrível (do 7 até o fim)</span>
+<span class="fn">print</span>(texto[::-<span class="nm">1</span>])   <span class="op"># lévircni é nohtyP</span>
+
+<span class="ck"># Slicing também funciona em listas!</span>
+nums = [<span class="nm">0</span>, <span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>, <span class="nm">4</span>]
+<span class="fn">print</span>(nums[<span class="nm">1</span>:<span class="nm">4</span>])  <span class="op"># [1, 2, 3]</span></code></pre>
+<h2>Strings são imutáveis</h2>
+<pre><code>nome = <span class="st">"Python"</span>
+<span class="ck"># nome[0] = "J"   # TypeError!</span>
+
+<span class="ck"># Para "modificar", construa uma nova string:</span>
+novo = <span class="st">"J"</span> + nome[<span class="nm">1</span>:]
+<span class="fn">print</span>(novo)  <span class="op"># Jython</span></code></pre>
+<h2>Métodos mais usados</h2>
+<pre><code>s = <span class="st">"  Olá, Mundo!  "</span>
+<span class="fn">print</span>(s.upper())      <span class="op"># "  OLÁ, MUNDO!  "</span>
+<span class="fn">print</span>(s.lower())      <span class="op"># "  olá, mundo!  "</span>
+<span class="fn">print</span>(s.strip())      <span class="op"># "Olá, Mundo!"</span>
+
+t = <span class="st">"banana"</span>
+<span class="fn">print</span>(t.replace(<span class="st">"a"</span>, <span class="st">"o"</span>))   <span class="op"># "bonono"</span>
+<span class="fn">print</span>(t.startswith(<span class="st">"ba"</span>))    <span class="op"># True</span>
+<span class="fn">print</span>(t.count(<span class="st">"a"</span>))         <span class="op"># 3</span>
+<span class="fn">print</span>(t.find(<span class="st">"nan"</span>))        <span class="op"># 1 (índice onde começa)</span>
+
+<span class="fn">print</span>(<span class="st">"3"</span>.isdigit())         <span class="op"># True</span>
+<span class="fn">print</span>(<span class="st">"abc"</span>.isalpha())       <span class="op"># True</span></code></pre>
+<h3>split() e join() — um par poderoso</h3>
+<pre><code><span class="ck"># split → string para lista</span>
+frase = <span class="st">"maçã, banana, laranja"</span>
+frutas = frase.split(<span class="st">", "</span>)
+<span class="fn">print</span>(frutas)  <span class="op"># ["maçã", "banana", "laranja"]</span>
+
+<span class="ck"># join → lista para string</span>
+lista = [<span class="st">"um"</span>, <span class="st">"dois"</span>, <span class="st">"três"</span>]
+<span class="fn">print</span>(<span class="st">" - "</span>.join(lista))  <span class="op"># um - dois - três</span></code></pre>
+<h3>f-strings (formatação moderna)</h3>
+<pre><code>nome = <span class="st">"Mig"</span>
+nota = <span class="nm">9.5</span>
+<span class="fn">print</span>(f<span class="st">"Aluno: {nome}, Nota: {nota:.1f}"</span>)  <span class="op"># Aluno: Mig, Nota: 9.5</span>
+<span class="fn">print</span>(f<span class="st">"O dobro de 10 é {10 * 2}"</span>)         <span class="op"># O dobro de 10 é 20</span></code></pre>
+<hr>
+${mkExercises('strings')}
+${mkCompleteBtn('strings','tuplas','Tuplas')}`,
+
+tuplas: `<div class="breadcrumb">Estruturas de Dados <span class="sep">›</span> Tuplas</div>
+<h1>Tuplas</h1>
+<p class="lead">Como listas, mas imutáveis. Uma vez criadas, não podem ser modificadas — e isso é uma funcionalidade, não uma limitação.</p>
+<h2>Criando tuplas</h2>
+<pre><code>coordenada = (<span class="nm">10</span>, <span class="nm">20</span>)
+rgb = (<span class="nm">255</span>, <span class="nm">128</span>, <span class="nm">0</span>)
+unica = (<span class="nm">42</span>,)       <span class="ck"># tupla de 1 elemento — precisa da vírgula!</span>
+vazia = ()
+
+<span class="ck"># Acesso igual a listas</span>
+<span class="fn">print</span>(coordenada[<span class="nm">0</span>])   <span class="op"># 10</span>
+<span class="fn">print</span>(coordenada[-<span class="nm">1</span>])  <span class="op"># 20</span>
+<span class="fn">print</span>(<span class="fn">len</span>(rgb))         <span class="op"># 3</span></code></pre>
+<h2>Imutabilidade</h2>
+<pre><code>ponto = (<span class="nm">5</span>, <span class="nm">10</span>)
+<span class="ck"># ponto[0] = 99   # TypeError — não pode modificar</span></code></pre>
+<div class="tip"><b>✓ Quando usar tupla?</b>Use tupla quando os dados não devem mudar: coordenadas, cores RGB, configurações fixas, retorno de múltiplos valores de função. Use lista quando precisar alterar.</div>
+<h2>Desempacotamento</h2>
+<pre><code>ponto = (<span class="nm">3</span>, <span class="nm">7</span>)
+x, y = ponto           <span class="ck"># desempacotamento</span>
+<span class="fn">print</span>(x)  <span class="op"># 3</span>
+<span class="fn">print</span>(y)  <span class="op"># 7</span>
+
+<span class="ck"># Com * para capturar o resto</span>
+primeiro, *resto = [<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>, <span class="nm">4</span>]
+<span class="fn">print</span>(primeiro)  <span class="op"># 1</span>
+<span class="fn">print</span>(resto)     <span class="op"># [2, 3, 4]</span>
+
+<span class="ck"># Troca de variáveis sem temporária</span>
+a, b = <span class="nm">10</span>, <span class="nm">20</span>
+a, b = b, a
+<span class="fn">print</span>(a, b)  <span class="op"># 20 10</span></code></pre>
+<hr>
+${mkExercises('tuplas')}
+${mkCompleteBtn('tuplas','sets','Sets')}`,
+
+sets: `<div class="breadcrumb">Estruturas de Dados <span class="sep">›</span> Sets</div>
+<h1>Sets (Conjuntos)</h1>
+<p class="lead">Coleções sem duplicatas e sem ordem garantida. Use quando importa apenas <em>o que existe</em>, não <em>em que posição</em>.</p>
+<h2>Criando sets</h2>
+<pre><code>frutas = {<span class="st">"maçã"</span>, <span class="st">"banana"</span>, <span class="st">"laranja"</span>}
+
+<span class="ck"># Duplicatas são eliminadas automaticamente</span>
+letras = {<span class="st">"a"</span>, <span class="st">"b"</span>, <span class="st">"a"</span>, <span class="st">"c"</span>}
+<span class="fn">print</span>(letras)  <span class="op"># {"a", "b", "c"} (ordem pode variar)</span>
+
+<span class="ck"># ATENÇÃO: {} cria dict vazio, não set!</span>
+vazio = <span class="fn">set</span>()  <span class="ck"># correto</span></code></pre>
+<h2>Operações de conjunto</h2>
+<pre><code>A = {<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>, <span class="nm">4</span>}
+B = {<span class="nm">3</span>, <span class="nm">4</span>, <span class="nm">5</span>, <span class="nm">6</span>}
+
+<span class="fn">print</span>(A | B)    <span class="op"># {1,2,3,4,5,6}  — União</span>
+<span class="fn">print</span>(A & B)    <span class="op"># {3,4}           — Interseção</span>
+<span class="fn">print</span>(A - B)    <span class="op"># {1,2}           — Diferença</span>
+<span class="fn">print</span>(A ^ B)    <span class="op"># {1,2,5,6}       — Diferença simétrica</span></code></pre>
+<h2>Usos práticos</h2>
+<pre><code><span class="ck"># Remover duplicatas de uma lista</span>
+nums = [<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">2</span>, <span class="nm">3</span>, <span class="nm">3</span>]
+unicos = <span class="fn">list</span>(<span class="fn">set</span>(nums))
+
+<span class="ck"># Verificação rápida de pertencimento</span>
+proibidas = {<span class="st">"spam"</span>, <span class="st">"lixo"</span>, <span class="st">"promoção"</span>}
+msg = <span class="st">"clique aqui promoção grátis"</span>
+
+<span class="kw">for</span> palavra <span class="kw">in</span> msg.split():
+    <span class="kw">if</span> palavra <span class="kw">in</span> proibidas:
+        <span class="fn">print</span>(f<span class="st">"Alerta: '{palavra}'"</span>)</code></pre>
+<div class="note"><b>💡 Velocidade</b><code>in</code> é muito mais rápido em sets do que em listas para grandes volumes. Sets usam hash internamente — procura em O(1) vs O(n) em listas.</div>
+<hr>
+${mkExercises('sets')}
+${mkCompleteBtn('sets','dicionarios','Dicionários')}`,
+
+dicionarios: `<div class="breadcrumb">Estruturas de Dados <span class="sep">›</span> Dicionários</div>
+<h1>Dicionários</h1>
+<p class="lead">Mapeiam chaves para valores. Pense como uma tabela de consulta — você dá uma chave e recebe um valor.</p>
+<h2>Criando dicionários</h2>
+<pre><code>pessoa = {
+    <span class="st">"nome"</span>: <span class="st">"Mig"</span>,
+    <span class="st">"idade"</span>: <span class="nm">20</span>,
+    <span class="st">"cidade"</span>: <span class="st">"Nova Friburgo"</span>
+}
+
+<span class="fn">print</span>(pessoa[<span class="st">"nome"</span>])    <span class="op"># Mig</span>
+<span class="fn">print</span>(pessoa[<span class="st">"cidade"</span>])  <span class="op"># Nova Friburgo</span></code></pre>
+<div class="warn"><b>⚠️ KeyError</b>Acessar chave inexistente gera <code>KeyError</code>. Use <code>.get()</code> para evitar.</div>
+<pre><code>pessoa = {<span class="st">"nome"</span>: <span class="st">"Mig"</span>}
+
+<span class="fn">print</span>(pessoa.get(<span class="st">"email"</span>))          <span class="op"># None</span>
+<span class="fn">print</span>(pessoa.get(<span class="st">"email"</span>, <span class="st">"N/A"</span>))   <span class="op"># N/A</span></code></pre>
+<h2>Modificando dicionários</h2>
+<pre><code>produto = {<span class="st">"nome"</span>: <span class="st">"Mouse"</span>, <span class="st">"preco"</span>: <span class="nm">70</span>}
+
+produto[<span class="st">"estoque"</span>] = <span class="nm">15</span>    <span class="ck"># adiciona nova chave</span>
+produto[<span class="st">"preco"</span>] = <span class="nm">65</span>      <span class="ck"># modifica valor existente</span>
+<span class="kw">del</span> produto[<span class="st">"estoque"</span>]      <span class="ck"># remove chave</span></code></pre>
+<h2>Iterando com .items()</h2>
+<pre><code>pessoa = {<span class="st">"nome"</span>: <span class="st">"Mig"</span>, <span class="st">"idade"</span>: <span class="nm">20</span>, <span class="st">"cidade"</span>: <span class="st">"NF"</span>}
+
+<span class="kw">for</span> chave <span class="kw">in</span> pessoa.keys():     <span class="ck"># itera chaves</span>
+    <span class="fn">print</span>(chave)
+
+<span class="kw">for</span> valor <span class="kw">in</span> pessoa.values():   <span class="ck"># itera valores</span>
+    <span class="fn">print</span>(valor)
+
+<span class="kw">for</span> chave, valor <span class="kw">in</span> pessoa.items():  <span class="ck"># par — o mais usado</span>
+    <span class="fn">print</span>(f<span class="st">"{chave}: {valor}"</span>)
+
+<span class="kw">if</span> <span class="st">"nome"</span> <span class="kw">in</span> pessoa:               <span class="ck"># verificar existência</span>
+    <span class="fn">print</span>(<span class="st">"Tem nome!"</span>)</code></pre>
+<h2>Dicionários aninhados</h2>
+<pre><code>catalogo = {
+    <span class="st">"mouse"</span>:    {<span class="st">"preco"</span>: <span class="nm">70</span>,  <span class="st">"estoque"</span>: <span class="nm">15</span>},
+    <span class="st">"teclado"</span>:  {<span class="st">"preco"</span>: <span class="nm">120</span>, <span class="st">"estoque"</span>: <span class="nm">8</span>},
+}
+
+<span class="fn">print</span>(catalogo[<span class="st">"mouse"</span>][<span class="st">"preco"</span>])    <span class="op"># 70</span>
+
+<span class="kw">for</span> produto, dados <span class="kw">in</span> catalogo.items():
+    <span class="fn">print</span>(f<span class="st">"{produto}: R\${dados['preco']}"</span>)</code></pre>
+<h2>Listas dentro de dicionários</h2>
+<pre><code>aluno = {
+    <span class="st">"nome"</span>:  <span class="st">"Ana"</span>,
+    <span class="st">"notas"</span>: [<span class="nm">8.5</span>, <span class="nm">7.0</span>, <span class="nm">9.0</span>],
+}
+
+media = <span class="fn">sum</span>(aluno[<span class="st">"notas"</span>]) / <span class="fn">len</span>(aluno[<span class="st">"notas"</span>])
+<span class="fn">print</span>(f<span class="st">"Média de {aluno['nome']}: {media:.1f}"</span>)   <span class="op"># Média de Ana: 8.2</span>
+
+aluno[<span class="st">"notas"</span>].append(<span class="nm">8.0</span>)   <span class="ck"># adiciona nova nota</span></code></pre>
+<div class="tip"><b>✓ Lista vs Dicionário</b>Use <strong>lista</strong> quando a ordem importa ou os itens são equivalentes. Use <strong>dicionário</strong> quando precisar de rótulos ou descrever um objeto com características distintas.</div>
+<hr>
+${mkExercises('dicionarios')}
+${mkCompleteBtn('dicionarios','fn-return','Return & Escopo')}`,
+
+'fn-return': `<div class="breadcrumb">Funções <span class="sep">›</span> Return e Escopo</div>
+<h1>Return e Escopo</h1>
+<p class="lead">Você já cria funções e usa parâmetros. Agora vamos entender o que <code>return</code> realmente faz — e como o Python decide onde variáveis existem.</p>
+<h2>print vs return</h2>
+<p>Essa é a distinção mais importante sobre funções. Veja:</p>
+<pre><code><span class="ck"># Com print — exibe, mas não "devolve" nada</span>
+<span class="kw">def</span> <span class="fn">dobrar_print</span>(x):
+    <span class="fn">print</span>(x * <span class="nm">2</span>)
+
+resultado = <span class="fn">dobrar_print</span>(<span class="nm">5</span>)   <span class="op"># 10 (aparece na tela)</span>
+<span class="fn">print</span>(resultado)               <span class="op"># None (função não retornou nada)</span>
+
+<span class="ck"># Com return — devolve o valor para quem chamou</span>
+<span class="kw">def</span> <span class="fn">dobrar</span>(x):
+    <span class="kw">return</span> x * <span class="nm">2</span>
+
+resultado = <span class="fn">dobrar</span>(<span class="nm">5</span>)         <span class="ck"># 10, guardado na variável</span>
+<span class="fn">print</span>(resultado)               <span class="op"># 10</span>
+<span class="fn">print</span>(<span class="fn">dobrar</span>(<span class="nm">7</span>) + <span class="nm">3</span>)          <span class="op"># 17 (pode usar em expressões!)</span></code></pre>
+<div class="note"><b>💡 Regra prática</b><code>print()</code> é para você ver. <code>return</code> é para o código usar. Sempre que precisar usar o resultado de uma função em outro lugar, use <code>return</code>.</div>
+<h2>Retornando múltiplos valores</h2>
+<pre><code><span class="kw">def</span> <span class="fn">minmax</span>(numeros):
+    <span class="kw">return</span> <span class="fn">min</span>(numeros), <span class="fn">max</span>(numeros)    <span class="ck"># retorna tupla</span>
+
+notas = [<span class="nm">7.5</span>, <span class="nm">9.0</span>, <span class="nm">5.5</span>, <span class="nm">8.0</span>]
+minimo, maximo = <span class="fn">minmax</span>(notas)         <span class="ck"># desempacotamento</span>
+<span class="fn">print</span>(f<span class="st">"Menor: {minimo}, Maior: {maximo}"</span>)  <span class="op"># Menor: 5.5, Maior: 9.0</span></code></pre>
+<h2>Parâmetros com valores padrão</h2>
+<pre><code><span class="kw">def</span> <span class="fn">saudar</span>(nome, cumprimento=<span class="st">"Olá"</span>):
+    <span class="fn">print</span>(f<span class="st">"{cumprimento}, {nome}!"</span>)
+
+<span class="fn">saudar</span>(<span class="st">"Mig"</span>)               <span class="op"># Olá, Mig!</span>
+<span class="fn">saudar</span>(<span class="st">"Mig"</span>, <span class="st">"Bom dia"</span>)   <span class="op"># Bom dia, Mig!</span></code></pre>
+<div class="warn"><b>⚠️ Ordem importa</b>Parâmetros com padrão sempre vêm <em>depois</em> dos obrigatórios. <code>def f(a=1, b)</code> gera SyntaxError.</div>
+<h2>Escopo — onde variáveis vivem</h2>
+<pre><code>x = <span class="nm">10</span>   <span class="ck"># variável GLOBAL — existe em todo o módulo</span>
+
+<span class="kw">def</span> <span class="fn">minha_funcao</span>():
+    y = <span class="nm">20</span>   <span class="ck"># variável LOCAL — existe só aqui dentro</span>
+    <span class="fn">print</span>(x)  <span class="op"># 10 — pode ver variável global</span>
+    <span class="fn">print</span>(y)  <span class="op"># 20</span>
+
+<span class="fn">minha_funcao</span>()
+<span class="fn">print</span>(x)    <span class="op"># 10 — ok</span>
+<span class="ck"># print(y)  # NameError — y não existe aqui fora</span></code></pre>
+<div class="tip"><b>✓ Boas práticas de escopo</b>Passe valores como parâmetros e receba-os via <code>return</code>. Evite <code>global</code> — torna o código difícil de testar e entender.</div>
+<pre><code><span class="ck"># ❌ Evite isso</span>
+total = <span class="nm">0</span>
+<span class="kw">def</span> <span class="fn">adicionar</span>(v):
+    <span class="kw">global</span> total
+    total += v
+
+<span class="ck"># ✅ Prefira isso</span>
+<span class="kw">def</span> <span class="fn">adicionar</span>(total, v):
+    <span class="kw">return</span> total + v
+
+total = <span class="fn">adicionar</span>(<span class="nm">0</span>, <span class="nm">5</span>)
+total = <span class="fn">adicionar</span>(total, <span class="nm">3</span>)
+<span class="fn">print</span>(total)  <span class="op"># 8</span></code></pre>
+<hr>
+${mkExercises('fn-return')}
+${mkCompleteBtn('fn-return','fn-compose','Composição de Funções')}`,
+
+'fn-compose': `<div class="breadcrumb">Funções <span class="sep">›</span> Composição</div>
+<h1>Composição de Funções</h1>
+<p class="lead">Funções pequenas, cada uma fazendo uma coisa bem. Composição é combinar essas peças para resolver problemas maiores.</p>
+<h2>O princípio</h2>
+<p>Uma função que faz muita coisa é difícil de testar, ler e reutilizar. A solução é dividir em funções menores e compor.</p>
+<pre><code><span class="ck"># ❌ Difícil de testar e reutilizar</span>
+<span class="kw">def</span> <span class="fn">processar_notas_e_exibir</span>(notas):
+    total = <span class="nm">0</span>
+    <span class="kw">for</span> n <span class="kw">in</span> notas:
+        total += n
+    media = total / <span class="fn">len</span>(notas)
+    <span class="fn">print</span>(f<span class="st">"Média: {media:.1f}"</span>)
+    <span class="kw">if</span> media >= <span class="nm">7</span>:
+        <span class="fn">print</span>(<span class="st">"Aprovado"</span>)
+    <span class="kw">else</span>:
+        <span class="fn">print</span>(<span class="st">"Reprovado"</span>)
+
+<span class="ck"># ✅ Cada função faz uma coisa — fácil de testar e reutilizar</span>
+<span class="kw">def</span> <span class="fn">calcular_media</span>(notas):
+    <span class="kw">return</span> <span class="fn">sum</span>(notas) / <span class="fn">len</span>(notas)
+
+<span class="kw">def</span> <span class="fn">classificar</span>(media):
+    <span class="kw">return</span> <span class="st">"Aprovado"</span> <span class="kw">if</span> media >= <span class="nm">7</span> <span class="kw">else</span> <span class="st">"Reprovado"</span>
+
+<span class="kw">def</span> <span class="fn">relatorio</span>(notas):
+    media = <span class="fn">calcular_media</span>(notas)          <span class="ck"># compondo</span>
+    status = <span class="fn">classificar</span>(media)
+    <span class="fn">print</span>(f<span class="st">"Média: {media:.1f} — {status}"</span>)
+
+notas = [<span class="nm">7.5</span>, <span class="nm">8.0</span>, <span class="nm">6.5</span>]
+<span class="fn">relatorio</span>(notas)   <span class="op"># Média: 7.3 — Aprovado</span></code></pre>
+<h2>Funções como argumentos</h2>
+<pre><code><span class="kw">def</span> <span class="fn">aplicar</span>(valor, funcao):
+    <span class="kw">return</span> <span class="fn">funcao</span>(valor)
+
+<span class="kw">def</span> <span class="fn">dobrar</span>(x): <span class="kw">return</span> x * <span class="nm">2</span>
+<span class="kw">def</span> <span class="fn">quadrado</span>(x): <span class="kw">return</span> x ** <span class="nm">2</span>
+
+<span class="fn">print</span>(<span class="fn">aplicar</span>(<span class="nm">5</span>, dobrar))    <span class="op"># 10</span>
+<span class="fn">print</span>(<span class="fn">aplicar</span>(<span class="nm">5</span>, quadrado))  <span class="op"># 25</span></code></pre>
+<div class="note"><b>💡 Funções são cidadãs de primeira classe</b>Em Python, funções podem ser passadas como argumentos, retornadas por outras funções e guardadas em variáveis. Você não precisa chamar — apenas passar a referência sem <code>()</code>.</div>
+<div class="mod-done">
+  <h3>Composição concluída</h3>
+  <p style="color:var(--muted);margin:.5rem 0">Próximo: funções trabalhando diretamente com listas e dicionários.</p>
+  <button class="btn btn-green" onclick="completeAndGo('fn-compose','fn-lists','Funções com Coleções')">✓ Concluído — Continuar →</button>
+</div>`,
+
+'fn-lists': `<div class="breadcrumb">Funções <span class="sep">›</span> Funções com Coleções</div>
+<h1>Funções com Coleções</h1>
+<p class="lead">Funções que recebem e retornam listas e dicionários — o padrão que você usará na maioria dos programas reais.</p>
+<h2>Recebendo listas como parâmetro</h2>
+<pre><code><span class="kw">def</span> <span class="fn">maiores_que</span>(numeros, limite):
+    resultado = []
+    <span class="kw">for</span> n <span class="kw">in</span> numeros:
+        <span class="kw">if</span> n > limite:
+            resultado.append(n)
+    <span class="kw">return</span> resultado
+
+notas = [<span class="nm">4.0</span>, <span class="nm">7.5</span>, <span class="nm">3.5</span>, <span class="nm">8.0</span>, <span class="nm">6.5</span>]
+<span class="fn">print</span>(<span class="fn">maiores_que</span>(notas, <span class="nm">6</span>))   <span class="op"># [7.5, 8.0, 6.5]</span></code></pre>
+<h2>Recebendo e retornando dicionários</h2>
+<pre><code><span class="kw">def</span> <span class="fn">adicionar_produto</span>(catalogo, nome, preco):
+    catalogo[nome] = {<span class="st">"preco"</span>: preco, <span class="st">"estoque"</span>: <span class="nm">0</span>}
+    <span class="kw">return</span> catalogo
+
+<span class="kw">def</span> <span class="fn">total_estoque</span>(catalogo):
+    <span class="kw">return</span> <span class="fn">sum</span>(item[<span class="st">"estoque"</span>] <span class="kw">for</span> item <span class="kw">in</span> catalogo.values())
+
+loja = {}
+<span class="fn">adicionar_produto</span>(loja, <span class="st">"mouse"</span>, <span class="nm">70</span>)
+<span class="fn">adicionar_produto</span>(loja, <span class="st">"teclado"</span>, <span class="nm">120</span>)
+<span class="fn">print</span>(loja)
+<span class="fn">print</span>(<span class="st">"Estoque total:"</span>, <span class="fn">total_estoque</span>(loja))  <span class="op"># 0</span></code></pre>
+<h2>Projeto pequeno: sistema de notas</h2>
+<pre><code><span class="kw">def</span> <span class="fn">criar_aluno</span>(nome):
+    <span class="kw">return</span> {<span class="st">"nome"</span>: nome, <span class="st">"notas"</span>: []}
+
+<span class="kw">def</span> <span class="fn">adicionar_nota</span>(aluno, nota):
+    aluno[<span class="st">"notas"</span>].append(nota)
+
+<span class="kw">def</span> <span class="fn">media</span>(aluno):
+    <span class="kw">if not</span> aluno[<span class="st">"notas"</span>]:
+        <span class="kw">return</span> <span class="nm">0</span>
+    <span class="kw">return</span> <span class="fn">sum</span>(aluno[<span class="st">"notas"</span>]) / <span class="fn">len</span>(aluno[<span class="st">"notas"</span>])
+
+<span class="kw">def</span> <span class="fn">status</span>(aluno):
+    m = <span class="fn">media</span>(aluno)
+    <span class="kw">if</span> m >= <span class="nm">7</span>: <span class="kw">return</span> <span class="st">"Aprovado"</span>
+    <span class="kw">if</span> m >= <span class="nm">5</span>: <span class="kw">return</span> <span class="st">"Recuperação"</span>
+    <span class="kw">return</span> <span class="st">"Reprovado"</span>
+
+<span class="ck"># Usando o sistema</span>
+mig = <span class="fn">criar_aluno</span>(<span class="st">"Mig"</span>)
+<span class="fn">adicionar_nota</span>(mig, <span class="nm">8.5</span>)
+<span class="fn">adicionar_nota</span>(mig, <span class="nm">7.0</span>)
+<span class="fn">adicionar_nota</span>(mig, <span class="nm">9.0</span>)
+
+<span class="fn">print</span>(f<span class="st">"{mig['nome']}: média {media(mig):.1f} — {status(mig)}"</span>)
+<span class="op"># Mig: média 8.2 — Aprovado</span></code></pre>
+<div class="tip"><b>✓ Padrão de design</b>Cada função tem uma responsabilidade. <code>criar_aluno</code> cria, <code>adicionar_nota</code> modifica, <code>media</code> calcula, <code>status</code> classifica. Isso é separação de responsabilidades — a base de código organizado.</div>
+<div class="mod-done">
+  <h3>Funções com Coleções concluído</h3>
+  <p style="color:var(--muted);margin:.5rem 0">Você agora tem as ferramentas para construir o primeiro projeto.</p>
+  <button class="btn btn-green" onclick="completeAndGo('fn-lists','proj-cli','Projeto: CLI')">✓ Concluído — Ver primeiro projeto →</button>
+</div>`,
+
+'proj-cli': `<div class="breadcrumb">Projetos <span class="sep">›</span> CLI — Lista de Tarefas</div>
+<h1>Projeto 1 — CLI: Lista de Tarefas</h1>
+<p class="lead">Seu primeiro projeto completo: um gerenciador de tarefas que roda no terminal.</p>
+<div class="note"><b>📋 Pré-requisitos</b>Listas · Dicionários · Funções · Return & Escopo</div>
+<h2>Objetivo</h2>
+<p>Construir um programa de linha de comando onde o usuário pode adicionar tarefas, listar, marcar como concluída e remover. Tudo usando o que você já aprendeu.</p>
+<h2>Requisitos</h2>
+<ul>
+  <li>Adicionar tarefa com descrição</li>
+  <li>Listar todas as tarefas com status (pendente / concluída)</li>
+  <li>Marcar tarefa como concluída por número</li>
+  <li>Remover tarefa por número</li>
+  <li>Sair do programa</li>
+</ul>
+<h2>Estrutura de dados sugerida</h2>
+<pre><code><span class="ck"># Cada tarefa é um dicionário</span>
+tarefa = {
+    <span class="st">"id"</span>: <span class="nm">1</span>,
+    <span class="st">"descricao"</span>: <span class="st">"Estudar Python"</span>,
+    <span class="st">"concluida"</span>: <span class="kw">False</span>
+}
+
+<span class="ck"># Lista de tarefas</span>
+tarefas = []</code></pre>
+<h2>Passos sugeridos</h2>
+<ol>
+  <li>Crie as funções: <code>adicionar_tarefa()</code>, <code>listar_tarefas()</code>, <code>concluir_tarefa()</code>, <code>remover_tarefa()</code></li>
+  <li>Crie o loop principal com <code>while True</code></li>
+  <li>Use <code>input()</code> para capturar as escolhas do usuário</li>
+  <li>Use <code>if/elif</code> para despachar para a função certa</li>
+  <li>Teste cada função antes de integrar no loop</li>
+</ol>
+<h2>Critérios de conclusão</h2>
+<ul>
+  <li>O programa não quebra com entradas inválidas</li>
+  <li>As tarefas são exibidas numeradas e com status</li>
+  <li>Marcar como concluída muda o status corretamente</li>
+  <li>Remover funciona pelo número exibido</li>
+</ul>
+<div class="warn"><b>⚠️ Tente primeiro</b>Escreva o código antes de olhar a solução. Mesmo que fique diferente da sugerida — funcionar é o que importa.</div>
+<h2>Solução referência</h2>
+<div class="ex-card">
+  <div class="ex-head"><strong>Ver solução completa</strong></div>
+  <div class="ex-body">
+    <button class="btn btn-ghost" onclick="this.nextElementSibling.style.display='block';this.style.display='none'">Mostrar solução →</button>
+    <div style="display:none">
+<pre><code>tarefas = []
+proximo_id = <span class="nm">1</span>
+
+<span class="kw">def</span> <span class="fn">adicionar_tarefa</span>(descricao):
+    <span class="kw">global</span> proximo_id
+    tarefas.append({
+        <span class="st">"id"</span>: proximo_id,
+        <span class="st">"descricao"</span>: descricao,
+        <span class="st">"concluida"</span>: <span class="kw">False</span>
+    })
+    proximo_id += <span class="nm">1</span>
+    <span class="fn">print</span>(f<span class="st">"✓ Tarefa adicionada."</span>)
+
+<span class="kw">def</span> <span class="fn">listar_tarefas</span>():
+    <span class="kw">if not</span> tarefas:
+        <span class="fn">print</span>(<span class="st">"Nenhuma tarefa."</span>)
+        <span class="kw">return</span>
+    <span class="fn">print</span>(<span class="st">"\n─── Tarefas ───"</span>)
+    <span class="kw">for</span> i, t <span class="kw">in</span> <span class="fn">enumerate</span>(tarefas, <span class="nm">1</span>):
+        status = <span class="st">"✓"</span> <span class="kw">if</span> t[<span class="st">"concluida"</span>] <span class="kw">else</span> <span class="st">"○"</span>
+        <span class="fn">print</span>(f<span class="st">"  {i}. [{status}] {t['descricao']}"</span>)
+    <span class="fn">print</span>()
+
+<span class="kw">def</span> <span class="fn">concluir_tarefa</span>(numero):
+    <span class="kw">if</span> <span class="nm">1</span> <= numero <= <span class="fn">len</span>(tarefas):
+        tarefas[numero - <span class="nm">1</span>][<span class="st">"concluida"</span>] = <span class="kw">True</span>
+        <span class="fn">print</span>(<span class="st">"Tarefa concluída!"</span>)
+    <span class="kw">else</span>:
+        <span class="fn">print</span>(<span class="st">"Número inválido."</span>)
+
+<span class="kw">def</span> <span class="fn">remover_tarefa</span>(numero):
+    <span class="kw">if</span> <span class="nm">1</span> <= numero <= <span class="fn">len</span>(tarefas):
+        removida = tarefas.pop(numero - <span class="nm">1</span>)
+        <span class="fn">print</span>(f<span class="st">"Removida: {removida['descricao']}"</span>)
+    <span class="kw">else</span>:
+        <span class="fn">print</span>(<span class="st">"Número inválido."</span>)
+
+<span class="ck"># Loop principal</span>
+<span class="fn">print</span>(<span class="st">"=== Lista de Tarefas ==="</span>)
+<span class="kw">while</span> <span class="kw">True</span>:
+    <span class="fn">print</span>(<span class="st">"[1] Adicionar  [2] Listar  [3] Concluir  [4] Remover  [0] Sair"</span>)
+    opcao = <span class="fn">input</span>(<span class="st">"→ "</span>).strip()
+
+    <span class="kw">if</span> opcao == <span class="st">"0"</span>:
+        <span class="fn">print</span>(<span class="st">"Até logo!"</span>)
+        <span class="kw">break</span>
+    <span class="kw">elif</span> opcao == <span class="st">"1"</span>:
+        desc = <span class="fn">input</span>(<span class="st">"Descrição: "</span>).strip()
+        <span class="kw">if</span> desc:
+            <span class="fn">adicionar_tarefa</span>(desc)
+    <span class="kw">elif</span> opcao == <span class="st">"2"</span>:
+        <span class="fn">listar_tarefas</span>()
+    <span class="kw">elif</span> opcao == <span class="st">"3"</span>:
+        <span class="fn">listar_tarefas</span>()
+        n = <span class="fn">input</span>(<span class="st">"Número: "</span>)
+        <span class="kw">if</span> n.isdigit():
+            <span class="fn">concluir_tarefa</span>(<span class="fn">int</span>(n))
+    <span class="kw">elif</span> opcao == <span class="st">"4"</span>:
+        <span class="fn">listar_tarefas</span>()
+        n = <span class="fn">input</span>(<span class="st">"Número: "</span>)
+        <span class="kw">if</span> n.isdigit():
+            <span class="fn">remover_tarefa</span>(<span class="fn">int</span>(n))
+    <span class="kw">else</span>:
+        <span class="fn">print</span>(<span class="st">"Opção inválida."</span>)</code></pre>
+    </div>
+  </div>
+</div>
+<div class="mod-done">
+  <h3>Projeto 1 — Pronto para marcar?</h3>
+  <p style="color:var(--muted);margin:.5rem 0">Marque quando seu programa estiver funcionando.</p>
+  <button class="btn btn-green" onclick="P.completeModule('proj-cli');this.textContent='✓ Marcado!'">✓ Projeto concluído</button>
+</div>`,
+
+};
+
+// ═══════════════════════════════════════════════════
+// GLOSSARY
+// ═══════════════════════════════════════════════════
+const GLOSSARY = [
+  {term:'variável', def:'Nome que referencia um valor na memória. <code>x = 10</code>', module:'revisao'},
+  {term:'lista', def:'Sequência ordenada e mutável. <code>[1, 2, 3]</code>', module:'listas'},
+  {term:'índice', def:'Posição numérica de um elemento em uma sequência. Começa em 0.', module:'listas'},
+  {term:'iteração', def:'Percorrer uma coleção elemento por elemento com <code>for</code>.', module:'listas'},
+  {term:'slicing', def:'Fatia de uma sequência. Sintaxe: <code>[início:fim:passo]</code>', module:'strings'},
+  {term:'tupla', def:'Sequência ordenada e imutável. <code>(1, 2, 3)</code>', module:'tuplas'},
+  {term:'desempacotamento', def:'Atribuir cada elemento de uma tupla/lista a variáveis: <code>x, y = (1, 2)</code>', module:'tuplas'},
+  {term:'set', def:'Coleção sem duplicatas e sem ordem. <code>{1, 2, 3}</code>', module:'sets'},
+  {term:'dicionário', def:'Estrutura chave→valor. <code>{"nome": "Mig"}</code>', module:'dicionarios'},
+  {term:'método', def:'Função que pertence a um objeto. Chamada com ponto: <code>lista.append()</code>', module:'listas'},
+  {term:'função', def:'Bloco de código reutilizável definido com <code>def</code>.', module:'fn-return'},
+  {term:'parâmetro', def:'Variável na definição da função: <code>def f(parâmetro):</code>', module:'fn-return'},
+  {term:'argumento', def:'Valor enviado ao chamar a função: <code>f(argumento)</code>', module:'fn-return'},
+  {term:'return', def:'Termina a função e devolve um valor ao chamador.', module:'fn-return'},
+  {term:'escopo', def:'Contexto onde uma variável existe. Variáveis locais vivem só dentro de funções.', module:'fn-return'},
+  {term:'composição', def:'Combinar funções pequenas para resolver um problema maior.', module:'fn-compose'},
+  {term:'módulo', def:'Arquivo Python importável com <code>import</code>.', module:'modulos'},
+  {term:'exceção', def:'Erro em tempo de execução. Tratado com <code>try/except</code>.', module:'excecoes'},
+  {term:'classe', def:'Template para criar objetos com atributos e métodos.', module:'classes'},
+  {term:'instância', def:'Objeto criado a partir de uma classe.', module:'classes'},
+  {term:'API', def:'Interface que permite comunicação entre programas.', module:'rest'},
+  {term:'endpoint', def:'URL específica de uma API que executa uma operação.', module:'rest'},
+  {term:'JSON', def:'Formato de dados texto, muito usado em APIs: <code>{"chave": "valor"}</code>', module:'json-mod'},
+  {term:'commit', def:'Snapshot do estado do código em um momento no Git.', module:'git-model'},
+  {term:'branch', def:'Linha de desenvolvimento independente no Git.', module:'git-branches'},
+  {term:'repository', def:'Pasta rastreada pelo Git com todo o histórico.', module:'git-model'},
+];
+
+// ═══════════════════════════════════════════════════
+// ROADMAP
+// ═══════════════════════════════════════════════════
+const ROADMAP_DATA = [
+  {icon:'✓',  status:'done',    title:'Lógica & Fundamentos', desc:'Variáveis, tipos, if/else, loops, funções básicas.', prereq:'Nenhum', gains:'Pensar em algoritmos · Controle de fluxo · Entrada e saída'},
+  {icon:'📦', status:'active',  title:'Estruturas de Dados',  desc:'Listas, strings, tuplas, sets e dicionários em profundidade.', prereq:'Fundamentos', gains:'Armazenar coleções · Escolher a estrutura certa · Manipular dados'},
+  {icon:'🔧', status:'locked',  title:'Funções Avançadas',    desc:'Return, escopo, composição, funções com coleções.', prereq:'Estruturas de Dados', gains:'Código reutilizável · Pensar em entradas/saídas · Reduzir repetição'},
+  {icon:'🐍', status:'locked',  title:'Python Intermediário', desc:'Módulos, exceções, arquivos, JSON, compreensão de listas.', prereq:'Funções', gains:'Projetos em múltiplos arquivos · Tratar erros · Persistir dados'},
+  {icon:'🏗️', status:'locked',  title:'POO',                  desc:'Classes, objetos, herança, composição.', prereq:'Python Intermediário', gains:'Modelar problemas complexos · Entender código de terceiros'},
+  {icon:'🗄️', status:'locked',  title:'SQL & SQLite',         desc:'JOINs, subconsultas, normalização, integração Python.', prereq:'POO', gains:'Banco de dados · Consultas eficientes · Dados persistentes'},
+  {icon:'🌿', status:'locked',  title:'Git & GitHub',         desc:'Modelo mental do Git, branches, merge, colaboração.', prereq:'Python Intermediário', gains:'Versionar código · Colaborar · Portfólio'},
+  {icon:'🌐', status:'locked',  title:'HTTP & APIs REST',     desc:'Protocolo HTTP, REST, consumo de APIs com Python.', prereq:'Python Intermediário + SQL', gains:'Integrar serviços · Consumir dados da web'},
+  {icon:'✅', status:'locked',  title:'Testes',               desc:'pytest, testes unitários, TDD básico.', prereq:'Funções + POO', gains:'Garantir qualidade · Trabalhar como dev profissional'},
+  {icon:'🚀', status:'locked',  title:'Projetos Completos',   desc:'CLI, JSON, SQLite, API, Projeto Final.', prereq:'Todos os anteriores', gains:'Software real · Portfólio completo · Pronto para estágio'},
+];
+
+// ═══════════════════════════════════════════════════
+// RENDER HELPERS
+// ═══════════════════════════════════════════════════
+function mkExercises(modId) {
+  const exs = EXERCISES[modId];
+  if (!exs || !exs.length) return '';
+  const stars = ['','★','★★','★★★'];
+  return `<h2>Exercícios</h2>` + exs.map(ex => `
+<div class="ex-card${P.exDone(ex.id) ? ' done-card' : ''}" id="xc-${ex.id}">
+  <div class="ex-head">
+    <span class="diff d${ex.diff}">${stars[ex.diff]}</span>
+    <strong>${ex.title}</strong>
+    ${P.exDone(ex.id) ? '<span class="ex-done-badge">✓ Feito</span>' : ''}
+  </div>
+  <div class="ex-body">
+    <p>${ex.desc}</p>
+    ${ex.expected ? `<div style="margin:.5rem 0"><div style="font-size:.72rem;color:var(--muted);margin-bottom:.25rem">Saída esperada:</div><div class="expected">${ex.expected}</div></div>` : ''}
+    <textarea class="editor" rows="7" placeholder="# Escreva seu código aqui...&#10;# Copie e execute no seu terminal ou REPL" spellcheck="false"></textarea>
+    <div class="ex-actions">
+      <button class="btn btn-hint" onclick="showHint('${ex.id}',${JSON.stringify(ex.hints).replace(/"/g,'&quot;')})">💡 Pista</button>
+      <button class="btn btn-ghost" onclick="toggleSol('${ex.id}')">Ver solução</button>
+      <button class="btn btn-done" onclick="markEx('${ex.id}')">✓ Fiz este</button>
+    </div>
+    <div class="hint-box" id="hb-${ex.id}"></div>
+    <div class="sol-box" id="sb-${ex.id}">
+      <div class="sol-label">SOLUÇÃO</div>
+      <pre style="margin:0;border:none;background:none;padding:0"><code>${esc(ex.sol)}</code></pre>
+      <div class="sol-explanation">${ex.exp}</div>
+    </div>
+  </div>
+</div>`).join('');
+}
+
+function mkCompleteBtn(id, nextId, nextLabel) {
+  return P.isDone(id)
+    ? `<div class="mod-done"><h3>✓ Módulo concluído</h3><button class="btn btn-ghost" onclick="nav('${nextId}')">Próximo: ${nextLabel} →</button></div>`
+    : `<div class="mod-done"><h3>Terminou o módulo?</h3><p style="color:var(--muted);margin:.4rem 0 .85rem">Conclua os exercícios antes de avançar.</p><button class="btn btn-green" onclick="completeAndGo('${id}','${nextId}','${nextLabel}')">✓ Concluído — ${nextLabel} →</button></div>`;
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════════════════
+// HINT & SOLUTION HANDLERS
+// ═══════════════════════════════════════════════════
+const HINT_IDX = {};
+function showHint(id, hints) {
+  const box = document.getElementById('hb-' + id);
+  const idx = (HINT_IDX[id] = (HINT_IDX[id] ?? -1) + 1);
+  if (idx >= hints.length) {
+    box.innerHTML = '<div style="color:var(--yellow)">Todas as pistas exibidas — tente a solução!</div>';
+    box.classList.add('show');
+    return;
+  }
+  let html = '';
+  for (let i = 0; i <= idx; i++) {
+    html += `<div class="hint-entry"><div class="hint-step-label">Pista ${i+1}/${hints.length}</div>${hints[i]}</div>`;
+  }
+  box.innerHTML = html;
+  box.classList.add('show');
+}
+
+function toggleSol(id) {
+  const box = document.getElementById('sb-' + id);
+  box.classList.toggle('show');
+}
+
+function markEx(id) {
+  P.markEx(id);
+  const card = document.getElementById('xc-' + id);
+  if (card) {
+    card.classList.add('done-card');
+    const head = card.querySelector('.ex-head');
+    if (!head.querySelector('.ex-done-badge')) {
+      const b = document.createElement('span');
+      b.className = 'ex-done-badge';
+      b.textContent = '✓ Feito';
+      head.appendChild(b);
+    }
+  }
+  updateHeaderPct();
+}
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+let currentView = 'dashboard';
+
+function nav(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('search-input').value = '';
+
+  if (id === 'dashboard') {
+    renderDashboard();
+    document.getElementById('pg-dashboard').classList.add('active');
+  } else if (id === 'roadmap') {
+    renderRoadmap();
+    document.getElementById('pg-roadmap').classList.add('active');
+  } else if (id === 'glossario') {
+    renderGlossario();
+    document.getElementById('pg-glossario').classList.add('active');
+  } else if (LESSONS[id]) {
+    const pg = document.getElementById('pg-lesson');
+    pg.innerHTML = typeof LESSONS[id] === 'function' ? LESSONS[id]() : LESSONS[id];
+    pg.classList.add('active');
+  } else {
+    const pg = document.getElementById('pg-lesson');
+    pg.innerHTML = `<h1>${ALL_LESSONS[id]?.label || id}</h1><div class="tip"><b>🔜 Em construção</b>Este módulo será adicionado em breve. A arquitetura já está preparada.</div>`;
+    pg.classList.add('active');
+  }
+
+  currentView = id;
+  document.getElementById('main').scrollTop = 0;
+  updateSidebarActive(id);
+}
+
+function completeAndGo(doneId, nextId) {
+  P.completeModule(doneId);
+  nav(nextId);
+}
+
+function updateSidebarActive(id) {
+  document.querySelectorAll('.sb-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════
+function renderSidebar() {
+  const sb = document.getElementById('sidebar');
+  let html = '';
+  for (const phase of PHASES) {
+    if (!phase.title) {
+      html += '<div class="sb-section">' + phase.items.map(item => `
+        <div class="sb-item${currentView===item.id?' active':''}" data-id="${item.id}" onclick="nav('${item.id}')">${item.label}</div>`).join('') + '</div>';
+    } else {
+      html += `<div class="sb-section"><span class="sb-label">${phase.title}</span>`;
+      for (const item of phase.items) {
+        const st = P.moduleStatus(item.id);
+        const done = st === 'done';
+        const locked = st === 'locked';
+        const active = currentView === item.id;
+        if (locked) {
+          html += `<div class="sb-item locked" title="Pré-requisitos não concluídos">🔒 ${item.label}</div>`;
+        } else {
+          html += `<div class="sb-item${active?' active':''}${done?' done':''}" data-id="${item.id}" onclick="nav('${item.id}')">${item.label}${done?'<span class="sb-check">✓</span>':''}</div>`;
+        }
+      }
+      html += '</div>';
+    }
+  }
+  sb.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════
+function renderDashboard() {
+  const pct = P.pct();
+  const cm = P.completedModules(), tm = P.totalModules();
+  const ce = P.completedExs(), te = P.totalExs();
+  const next = P.firstAvailable();
+  document.getElementById('pg-dashboard').innerHTML = `
+<h1>Dashboard</h1>
+<p class="lead">Bem-vindo de volta, Mig.</p>
+<h2>Progresso Geral</h2>
+<div style="margin:1rem 0">
+  <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;font-size:.82rem">
+    <span style="color:var(--muted)">${cm} de ${tm} módulos concluídos</span>
+    <strong style="color:var(--green)">${pct}%</strong>
+  </div>
+  <div class="pbar" style="height:8px"><div class="pbar-fill" style="width:${pct}%"></div></div>
+</div>
+<div class="stat-grid">
+  <div class="stat"><div class="val">${cm}</div><div class="lbl">Módulos concluídos</div></div>
+  <div class="stat"><div class="val">${tm-cm}</div><div class="lbl">Módulos restantes</div></div>
+  <div class="stat"><div class="val">${ce}</div><div class="lbl">Exercícios feitos</div></div>
+  <div class="stat"><div class="val">${te-ce}</div><div class="lbl">Exercícios restantes</div></div>
+</div>
+${next ? `<h2>Estudar Agora</h2>
+<div class="current-card">
+  <div style="font-size:.75rem;color:var(--muted);margin-bottom:.4rem">Próximo módulo disponível</div>
+  <div style="font-weight:700;font-size:1.1rem;margin-bottom:.85rem">${next.label}</div>
+  <button class="btn btn-primary" onclick="nav('${next.id}')">Continuar →</button>
+</div>` : `<div class="mod-done"><h3>🎉 Curso concluído!</h3><p>Você completou todos os módulos disponíveis.</p></div>`}
+<h2>Acesso Rápido</h2>
+<div class="quick-nav">
+  ${[['📍','Roadmap','roadmap'],['📖','Glossário','glossario'],['📦','Listas','listas'],['🗂️','Dicionários','dicionarios'],['🔧','Return & Escopo','fn-return'],['🚀','Projeto CLI','proj-cli']].map(([i,l,id])=>`<button class="qbtn" onclick="nav('${id}')">${i} ${l}</button>`).join('')}
+</div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// ROADMAP
+// ═══════════════════════════════════════════════════
+function renderRoadmap() {
+  document.getElementById('roadmap-nodes').innerHTML = ROADMAP_DATA.map(n => `
+<div class="rm-node">
+  <div class="rm-dot${n.status==='done'?' done':n.status==='active'?' active':''}">${n.icon}</div>
+  <div class="rm-body">
+    <div class="rm-title">${n.title} ${n.status==='active'?'<span class="here-tag">→ Você está aqui</span>':''}</div>
+    <div class="rm-desc">${n.desc}</div>
+    <div class="rm-meta"><strong>Pré-req:</strong> ${n.prereq} &nbsp;·&nbsp; <strong>Você vai saber:</strong> ${n.gains}</div>
+  </div>
+</div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// GLOSSARY
+// ═══════════════════════════════════════════════════
+function renderGlossario() {
+  document.getElementById('gloss-list').innerHTML = GLOSSARY.map(g => `
+<div class="gloss-item" data-t="${g.term}">
+  <div class="gloss-term"><code>${g.term}</code></div>
+  <div class="gloss-def">${g.def} ${g.module && LESSONS[g.module] ? `<a href="#" onclick="nav('${g.module}');return false" style="font-size:.78rem">→ ver módulo</a>` : ''}</div>
+</div>`).join('');
+}
+
+function filterGloss(q) {
+  document.querySelectorAll('#gloss-list .gloss-item').forEach(el => {
+    el.style.display = (el.dataset.t||'').includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════════
+function doSearch(q) {
+  if (!q || q.length < 2) return;
+  q = q.toLowerCase();
+  const results = [];
+
+  for (const phase of PHASES) {
+    for (const item of phase.items) {
+      if (item.label.toLowerCase().includes(q) || item.id.includes(q)) {
+        results.push({type:'módulo', title:item.label, path:(phase.title||'Navegação')+' › '+item.label, id:item.id});
+      }
+    }
+  }
+  GLOSSARY.forEach(g => {
+    if (g.term.includes(q) || g.def.toLowerCase().includes(q)) {
+      results.push({type:'glossário', title:g.term, path:'Glossário › '+g.term, id:'glossario'});
+    }
+  });
+  Object.entries(EXERCISES).forEach(([mod, exs]) => {
+    exs.forEach(ex => {
+      if (ex.title.toLowerCase().includes(q) || ex.desc.toLowerCase().includes(q)) {
+        results.push({type:'exercício', title:ex.title, path:'Exercícios › '+ex.title, id:mod});
+      }
+    });
+  });
+
+  document.getElementById('search-title').textContent = `Busca: "${q}" — ${results.length} resultado(s)`;
+  document.getElementById('search-results').innerHTML = results.length
+    ? results.map(r => `<div class="sr" onclick="nav('${r.id}')"><div class="sr-path"><span class="tag">${r.type}</span>${r.path}</div><div class="sr-title">${r.title}</div></div>`).join('')
+    : '<p style="color:var(--muted)">Nenhum resultado encontrado.</p>';
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('pg-search').classList.add('active');
+  currentView = 'search';
+  updateSidebarActive('');
+}
+
+function updateHeaderPct() {
+  document.getElementById('hdr-pct').textContent = P.pct() + '%';
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Escape') { e.target.value = ''; nav(currentView === 'search' ? 'dashboard' : currentView); }
+});
+
+renderSidebar();
+updateHeaderPct();
+nav('dashboard');
+</script>
+</body>
+</html>
