@@ -444,6 +444,82 @@ const EXERCISES = {
     exp:'Quando <code>return</code> está dentro de um <code>if</code>, a função para imediatamente. Percorrer uma lista de casos de teste é um hábito excelente.'
   },
 ],
+'excecoes': [
+  { id:'exc-01', title:'Divisão segura', diff:1,
+    desc:'Escreva <code>dividir(a, b)</code> que retorna a/b, mas retorna <code>None</code> se b for 0 (use try/except). Teste com (10, 2) e (5, 0).',
+    expected:'5.0\nNone',
+    hints:['Coloque a divisão dentro de <code>try:</code>','O erro é <code>ZeroDivisionError</code>','No <code>except</code>, faça <code>return None</code>'],
+    sol:`def dividir(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        return None\n\nprint(dividir(10, 2))\nprint(dividir(5, 0))`,
+    exp:'Capture o erro específico (<code>ZeroDivisionError</code>) e não um <code>except</code> genérico, para não esconder outros problemas.'
+  },
+  { id:'exc-02', title:'Número válido', diff:1,
+    desc:'Peça um número com <code>input()</code> e converta para int. Se não for número, exiba "Valor inválido"; se for, exiba o dobro.',
+    expected:'(digitando abc) Valor inválido\n(digitando 4) 8',
+    hints:['<code>int("abc")</code> levanta <code>ValueError</code>','Coloque <code>int(input(...))</code> dentro do try','Use o <code>else</code> do try para exibir o dobro quando deu certo'],
+    sol:`try:\n    n = int(input("Número: "))\nexcept ValueError:\n    print("Valor inválido")\nelse:\n    print(n * 2)`,
+    exp:'O <code>else</code> roda só se o try não falhou. Isso mantém no try apenas o código que pode dar erro.'
+  },
+  { id:'exc-03', title:'Loop até acertar', diff:2,
+    desc:'Crie <code>ler_inteiro(msg)</code> que pergunta repetidamente até o usuário digitar um inteiro válido, e então o retorna.',
+    expected:'(abc, 3.5, 7) retorna 7',
+    hints:['Use <code>while True:</code>','Dentro do loop: <code>try: return int(input(msg))</code>','No <code>except ValueError</code>, exiba um aviso e deixe o loop repetir'],
+    sol:`def ler_inteiro(msg):\n    while True:\n        try:\n            return int(input(msg))\n        except ValueError:\n            print("Digite um inteiro válido.")\n\nidade = ler_inteiro("Idade: ")\nprint(idade)`,
+    exp:'Padrão muito usado em CLIs: laço infinito que só sai pelo <code>return</code> quando a entrada é válida. Ótimo para o seu gerenciador de tarefas.'
+  },
+  { id:'exc-04', title:'Raise com regra', diff:2,
+    desc:'Crie <code>definir_idade(idade)</code> que levanta <code>ValueError("Idade inválida")</code> se idade < 0 ou > 120. Chame com 150 dentro de try/except e exiba a mensagem do erro.',
+    expected:'Idade inválida',
+    hints:['Use <code>raise ValueError("Idade inválida")</code>','Valide com <code>if idade < 0 or idade > 120:</code>','Capture com <code>except ValueError as e:</code> e exiba <code>e</code>'],
+    sol:`def definir_idade(idade):\n    if idade < 0 or idade > 120:\n        raise ValueError("Idade inválida")\n    return idade\n\ntry:\n    definir_idade(150)\nexcept ValueError as e:\n    print(e)`,
+    exp:'<code>raise</code> sinaliza que quem chamou usou a função de forma errada. <code>as e</code> dá acesso à mensagem.'
+  },
+  { id:'exc-05', title:'Finally e exceção própria', diff:3,
+    desc:'Crie a exceção <code>SaldoInsuficiente</code> (herda de <code>Exception</code>). Em <code>sacar(saldo, valor)</code>, levante-a se valor > saldo. Chame com (100, 150), capture e exiba "Operação encerrada" sempre, usando <code>finally</code>.',
+    expected:'Saldo insuficiente\nOperação encerrada',
+    hints:['<code>class SaldoInsuficiente(Exception): pass</code>','<code>raise SaldoInsuficiente("Saldo insuficiente")</code>','O <code>finally</code> roda dando erro ou não'],
+    sol:`class SaldoInsuficiente(Exception):\n    pass\n\ndef sacar(saldo, valor):\n    if valor > saldo:\n        raise SaldoInsuficiente("Saldo insuficiente")\n    return saldo - valor\n\ntry:\n    sacar(100, 150)\nexcept SaldoInsuficiente as e:\n    print(e)\nfinally:\n    print("Operação encerrada")`,
+    exp:'Exceções próprias deixam o erro com nome de domínio. <code>finally</code> é o lugar de limpeza (fechar arquivo, conexão).'
+  },
+],
+
+'modulos': [
+  { id:'mod-01', title:'Raiz quadrada com math', diff:1,
+    desc:'Importe o módulo <code>math</code> e exiba a raiz quadrada de 144 e o valor de pi arredondado com 2 casas decimais.',
+    expected:'12.0\n3.14',
+    hints:['Comece com <code>import math</code>','A raiz é <code>math.sqrt(144)</code> e pi é <code>math.pi</code>','Formate o pi com <code>f"{math.pi:.2f}"</code>'],
+    sol:`import math\nprint(math.sqrt(144))\nprint(f"{math.pi:.2f}")`,
+    exp:'Com <code>import math</code> você acessa tudo por <code>math.nome</code>. O prefixo deixa claro de onde cada função vem.'
+  },
+  { id:'mod-02', title:'Sorteio com random', diff:1,
+    desc:'Use <code>from random import choice</code> para sortear um nome da lista <code>["Ana","Bia","Caio"]</code> e exiba "Sorteado: ..." (o resultado varia).',
+    expected:'Sorteado: Bia',
+    hints:['<code>from random import choice</code> traz só a função <code>choice</code>','Com esse import, chame <code>choice(nomes)</code> sem prefixo','<code>print("Sorteado:", choice(nomes))</code>'],
+    sol:`from random import choice\n\nnomes = ["Ana", "Bia", "Caio"]\nprint("Sorteado:", choice(nomes))`,
+    exp:'<code>from modulo import nome</code> traz só o que você pediu e dispensa o prefixo. Bom para poucos nomes.'
+  },
+  { id:'mod-03', title:'Seu próprio módulo', diff:2,
+    desc:'Crie <code>utils.py</code> com <code>dobro(n)</code> e <code>eh_par(n)</code>. Em <code>main.py</code>, importe e exiba <code>dobro(21)</code> e <code>eh_par(7)</code>.',
+    expected:'42\nFalse',
+    hints:['Os dois arquivos ficam na mesma pasta','Em main.py: <code>from utils import dobro, eh_par</code> (ou <code>import utils</code>)','<code>eh_par</code> retorna <code>n % 2 == 0</code>'],
+    sol:`# utils.py\ndef dobro(n):\n    return n * 2\n\ndef eh_par(n):\n    return n % 2 == 0\n\n# main.py\nfrom utils import dobro, eh_par\n\nprint(dobro(21))\nprint(eh_par(7))`,
+    exp:'Todo arquivo <code>.py</code> é um módulo. Importar é só usar o nome do arquivo, sem a extensão.'
+  },
+  { id:'mod-04', title:'Guarda do __main__', diff:2,
+    desc:'Em <code>utils.py</code>, adicione código de teste que só roda quando você executa <code>python utils.py</code> diretamente, e não quando outro arquivo importa o módulo.',
+    expected:'(ao rodar utils.py) Teste: 10',
+    hints:['Existe uma variável especial chamada <code>__name__</code>','Rodando direto, <code>__name__ == "__main__"</code>','Coloque o teste dentro de <code>if __name__ == "__main__":</code>'],
+    sol:`def dobro(n):\n    return n * 2\n\nif __name__ == "__main__":\n    print("Teste:", dobro(5))`,
+    exp:'Ao ser importado, <code>__name__</code> vira o nome do módulo. O bloco do if só roda na execução direta. Padrão em todo projeto Python.'
+  },
+  { id:'mod-05', title:'Data e hora formatadas', diff:3,
+    desc:'Com <code>datetime</code>, exiba a data de hoje no formato <code>dd/mm/aaaa</code> e quantos dias faltam até 31/12 do ano atual.',
+    expected:'02/11/2026\nFaltam 59 dias',
+    hints:['<code>from datetime import date</code> e <code>hoje = date.today()</code>','<code>hoje.strftime("%d/%m/%Y")</code> formata a data','Subtrair duas datas dá um <code>timedelta</code>; use <code>.days</code>'],
+    sol:`from datetime import date\n\nhoje = date.today()\nfim = date(hoje.year, 12, 31)\nprint(hoje.strftime("%d/%m/%Y"))\nprint(f"Faltam {(fim - hoje).days} dias")`,
+    exp:'<code>date.today()</code> pega a data atual. Subtrair datas gera um <code>timedelta</code>, e <code>.days</code> dá a diferença em dias.'
+  },
+],
+
 };
 
 // ═══════════════════════════════════════════════════
@@ -1067,6 +1143,149 @@ proximo_id = <span class="nm">1</span>
   <p style="color:var(--muted);margin:.5rem 0">Marque quando seu programa estiver funcionando.</p>
   <button class="btn btn-green" onclick="P.completeModule('proj-cli');this.textContent='✓ Marcado!'">✓ Projeto concluído</button>
 </div>`,
+
+'modulos': `<div class="breadcrumb">Python Intermediário <span class="sep">›</span> Módulos &amp; Import</div>
+<h1>Módulos &amp; Import</h1>
+<p class="lead">Um módulo é um arquivo Python que outros arquivos podem reutilizar. É assim que projetos crescem sem virar um arquivo gigante.</p>
+<div class="note"><b>📋 Pré-requisitos</b>Funções · Return &amp; Escopo · Funções com Coleções</div>
+<h2>Por que módulos existem</h2>
+<p>Seu projeto CLI já tem várias funções num único arquivo. Com módulos, você separa por assunto (tarefas, arquivos, utilidades) e importa só o que precisa. Python ainda traz a <b>biblioteca padrão</b>, com centenas de módulos prontos.</p>
+<h2>As formas de importar</h2>
+<pre><code><span class="kw">import</span> math
+<span class="fn">print</span>(math.sqrt(<span class="nm">16</span>))        <span class="op"># 4.0 — usa o prefixo</span>
+
+<span class="kw">from</span> math <span class="kw">import</span> sqrt, pi
+<span class="fn">print</span>(sqrt(<span class="nm">16</span>), pi)         <span class="op"># sem prefixo</span>
+
+<span class="kw">import</span> datetime <span class="kw">as</span> dt     <span class="op"># apelido</span>
+<span class="fn">print</span>(dt.date.today())
+
+<span class="kw">from</span> math <span class="kw">import</span> *          <span class="op"># evite: polui o código com nomes soltos</span></code></pre>
+<div class="tip"><b>✓ Regra prática</b>Use <code>import modulo</code> por padrão, pois fica claro de onde cada coisa vem. Use <code>from ... import</code> quando for usar poucos nomes várias vezes. Evite o <code>*</code>.</div>
+<h2>Módulos úteis da biblioteca padrão</h2>
+<pre><code><span class="kw">import</span> random, math, os
+<span class="kw">from</span> datetime <span class="kw">import</span> date
+<span class="kw">from</span> collections <span class="kw">import</span> Counter
+
+<span class="fn">print</span>(random.randint(<span class="nm">1</span>, <span class="nm">6</span>))               <span class="op"># dado</span>
+<span class="fn">print</span>(math.floor(<span class="nm">3.9</span>))                  <span class="op"># 3</span>
+<span class="fn">print</span>(date.today().year)                <span class="op"># ano atual</span>
+<span class="fn">print</span>(Counter(<span class="st">"banana"</span>))                 <span class="op"># Counter({'a': 3, 'n': 2, 'b': 1})</span>
+<span class="fn">print</span>(os.getcwd())                      <span class="op"># pasta atual</span></code></pre>
+<p>Para explorar qualquer módulo no REPL: <code>dir(math)</code> lista o que ele tem e <code>help(math.sqrt)</code> mostra a documentação.</p>
+<h2>Criando seu próprio módulo</h2>
+<p>Todo arquivo <code>.py</code> já é um módulo. Com dois arquivos na mesma pasta:</p>
+<pre><code><span class="ck"># tarefas.py</span>
+<span class="kw">def</span> <span class="fn">nova_tarefa</span>(lista, descricao):
+    lista.append({<span class="st">"descricao"</span>: descricao, <span class="st">"concluida"</span>: <span class="kw">False</span>})
+
+<span class="ck"># main.py</span>
+<span class="kw">import</span> tarefas
+
+minhas = []
+tarefas.nova_tarefa(minhas, <span class="st">"Estudar módulos"</span>)
+<span class="fn">print</span>(minhas)</code></pre>
+<div class="note"><b>💡 No seu projeto CLI</b>Você pode mover as funções de tarefas para <code>tarefas.py</code> e deixar o <code>tarefasreal.py</code> só com o menu e o loop. Fica bem mais organizado.</div>
+<h2>O guarda <code>if __name__ == "__main__"</code></h2>
+<p>Quando um arquivo é importado, Python executa tudo que está nele. Para que o código de teste ou o menu só rode na execução direta, use o guarda:</p>
+<pre><code><span class="kw">def</span> <span class="fn">dobro</span>(n):
+    <span class="kw">return</span> n * <span class="nm">2</span>
+
+<span class="kw">if</span> __name__ == <span class="st">"__main__"</span>:
+    <span class="fn">print</span>(<span class="fn">dobro</span>(<span class="nm">5</span>))     <span class="op"># só roda com: python arquivo.py</span></code></pre>
+<h2>Pacotes e pip (visão geral)</h2>
+<ul>
+  <li><b>Pacote</b>: pasta com módulos (e um <code>__init__.py</code>), importada como <code>from pacote import modulo</code></li>
+  <li><b>pip</b>: instala módulos de terceiros, como <code>pip install requests</code></li>
+  <li><b>venv</b>: ambiente isolado por projeto, com <code>python -m venv .venv</code></li>
+</ul>
+<div class="warn"><b>⚠️ Erro clássico</b>Não nomeie seus arquivos como módulos existentes (<code>random.py</code>, <code>math.py</code>). Seu arquivo passa a ser importado no lugar do original e quebra tudo. Também evite importações circulares (A importa B, que importa A).</div>
+${mkExercises('modulos')}
+${mkCompleteBtn('modulos','excecoes','Exceções')}`,
+
+'excecoes': `<div class="breadcrumb">Python Intermediário <span class="sep">›</span> Exceções</div>
+<h1>Exceções</h1>
+<p class="lead">Erros vão acontecer: entrada inválida, arquivo ausente, divisão por zero. Exceções permitem tratar isso sem o programa quebrar.</p>
+<div class="note"><b>📋 Pré-requisitos</b>Módulos &amp; Import · Funções</div>
+<h2>O problema</h2>
+<pre><code>idade = <span class="fn">int</span>(<span class="fn">input</span>(<span class="st">"Idade: "</span>))   <span class="op"># digitou "abc"?</span>
+<span class="op"># ValueError: invalid literal for int() with base 10: 'abc'</span></code></pre>
+<p>Sem tratamento, o programa termina com um <i>traceback</i>. Lendo o traceback de baixo para cima, você vê o tipo do erro e a linha onde ocorreu.</p>
+<h2>try / except</h2>
+<pre><code><span class="kw">try</span>:
+    idade = <span class="fn">int</span>(<span class="fn">input</span>(<span class="st">"Idade: "</span>))
+<span class="kw">except</span> ValueError:
+    <span class="fn">print</span>(<span class="st">"Digite um número."</span>)</code></pre>
+<p>O Python tenta o bloco <code>try</code>. Se uma exceção do tipo indicado acontecer, pula para o <code>except</code>.</p>
+<h2>Exceções mais comuns</h2>
+<ul>
+  <li><code>ValueError</code>: valor com tipo certo, mas conteúdo inválido (<code>int("abc")</code>)</li>
+  <li><code>TypeError</code>: operação com tipo errado (<code>"a" + 1</code>)</li>
+  <li><code>ZeroDivisionError</code>: divisão por zero</li>
+  <li><code>IndexError</code>: índice fora da lista</li>
+  <li><code>KeyError</code>: chave inexistente no dicionário</li>
+  <li><code>FileNotFoundError</code>: arquivo não existe</li>
+  <li><code>ImportError</code> / <code>ModuleNotFoundError</code>: módulo não encontrado</li>
+</ul>
+<h2>Vários except, else e finally</h2>
+<pre><code><span class="kw">def</span> <span class="fn">pegar</span>(lista, i):
+    <span class="kw">try</span>:
+        valor = lista[i]
+    <span class="kw">except</span> IndexError:
+        <span class="fn">print</span>(<span class="st">"Índice fora da lista"</span>)
+    <span class="kw">except</span> TypeError:
+        <span class="fn">print</span>(<span class="st">"Índice deve ser inteiro"</span>)
+    <span class="kw">else</span>:
+        <span class="fn">print</span>(<span class="st">"Deu certo:"</span>, valor)
+    <span class="kw">finally</span>:
+        <span class="fn">print</span>(<span class="st">"Fim da tentativa"</span>)
+
+<span class="fn">pegar</span>([<span class="nm">1</span>, <span class="nm">2</span>], <span class="nm">5</span>)</code></pre>
+<ul>
+  <li><code>except</code>: roda se aquele erro ocorrer</li>
+  <li><code>else</code>: roda só se <b>não</b> houve erro</li>
+  <li><code>finally</code>: roda <b>sempre</b>, com ou sem erro (limpeza)</li>
+</ul>
+<p>Para tratar tipos diferentes do mesmo jeito: <code>except (ValueError, TypeError):</code>. Para ver a mensagem: <code>except ValueError as e: print(e)</code>.</p>
+<div class="warn"><b>⚠️ Evite o except vazio</b><code>except:</code> sem tipo captura tudo, até erros de digitação seus, e esconde bugs. Capture o erro específico que você espera.</div>
+<h2>Levantando exceções com raise</h2>
+<pre><code><span class="kw">def</span> <span class="fn">raiz</span>(n):
+    <span class="kw">if</span> n < <span class="nm">0</span>:
+        <span class="kw">raise</span> ValueError(<span class="st">"n não pode ser negativo"</span>)
+    <span class="kw">return</span> n ** <span class="nm">0.5</span>
+
+<span class="kw">try</span>:
+    <span class="fn">raiz</span>(-<span class="nm">4</span>)
+<span class="kw">except</span> ValueError <span class="kw">as</span> e:
+    <span class="fn">print</span>(<span class="st">"Erro:"</span>, e)</code></pre>
+<p>Quem escreve a função decide quando algo está errado (<code>raise</code>). Quem chama decide o que fazer (<code>except</code>).</p>
+<h2>Exceções personalizadas</h2>
+<pre><code><span class="kw">class</span> <span class="fn">TarefaNaoEncontrada</span>(Exception):
+    <span class="kw">pass</span>
+
+<span class="kw">def</span> <span class="fn">buscar</span>(tarefas, id):
+    <span class="kw">for</span> t <span class="kw">in</span> tarefas:
+        <span class="kw">if</span> t[<span class="st">"id"</span>] == id:
+            <span class="kw">return</span> t
+    <span class="kw">raise</span> <span class="fn">TarefaNaoEncontrada</span>(<span class="st">f"Tarefa {id} não existe"</span>)</code></pre>
+<div class="note"><b>💡 Classes</b>A sintaxe <code>class ...(Exception)</code> será explicada no módulo de POO. Por enquanto, use como receita para criar um erro com nome próprio.</div>
+<h2>Padrão: validar entrada em loop</h2>
+<pre><code><span class="kw">def</span> <span class="fn">ler_inteiro</span>(msg):
+    <span class="kw">while True</span>:
+        <span class="kw">try</span>:
+            <span class="kw">return</span> <span class="fn">int</span>(<span class="fn">input</span>(msg))
+        <span class="kw">except</span> ValueError:
+            <span class="fn">print</span>(<span class="st">"Digite um inteiro válido."</span>)</code></pre>
+<div class="tip"><b>✓ EAFP</b>Em Python é comum <i>pedir perdão em vez de permissão</i>: tente a operação e trate o erro, em vez de checar antes todas as condições possíveis.</div>
+<h2>Boas práticas</h2>
+<ul>
+  <li>Deixe no <code>try</code> só o código que pode falhar</li>
+  <li>Capture exceções específicas, da mais específica para a mais geral</li>
+  <li>Não engula erros em silêncio: mostre uma mensagem ou registre o problema</li>
+  <li>Use <code>finally</code> (ou <code>with</code>, no próximo módulo) para liberar recursos</li>
+</ul>
+${mkExercises('excecoes')}
+${mkCompleteBtn('excecoes','arquivos','Arquivos')}`,
 
 };
 
